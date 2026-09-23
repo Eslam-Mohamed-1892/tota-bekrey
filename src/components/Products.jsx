@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useFormik } from 'formik'
-import * as Yup from 'yup'
+import * as Yup from "yup";
 import { supabase } from '../supabase'
 
 export default function Products({ products }) {
