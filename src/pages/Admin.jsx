@@ -12,14 +12,25 @@ import {
 
 
 export default function Admin({ products, setProducts }) {
+
+  const currentMonth = (() => {
+    const date = new Date()
+
+    return `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}`
+  })()
+
+
   const [imagePreview, setImagePreview] = useState('')
   const [editImagePreview, setEditImagePreview] = useState('')
   const [ordersCount, setOrdersCount] = useState(0)
   const [totalSales, setTotalSales] = useState(0)
-  const [selectedMonth, setSelectedMonth] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [reportOrders, setReportOrders] = useState(0)
   const [reportSales, setReportSales] = useState(0)
   const [monthlySales, setMonthlySales] = useState([])
+  const [orders, setOrders] = useState([])
 
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -40,52 +51,6 @@ export default function Admin({ products, setProducts }) {
 
   useEffect(() => {
     const getOrders = async () => {
-      const now = new Date()
-
-      const startOfMonth = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        1
-      )
-
-      const startOfNextMonth = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        1
-      )
-
-      const { data, error } = await supabase
-        .from('orders')
-        .select('total_price')
-        .gte('created_at', startOfMonth.toISOString())
-        .lt('created_at', startOfNextMonth.toISOString())
-
-      if (error) {
-        console.log('Error loading orders:', error)
-        return
-      }
-
-      setOrdersCount(data.length)
-
-      const sales = data.reduce(
-        (total, order) => total + Number(order.total_price),
-        0
-      )
-
-      setTotalSales(sales)
-    }
-
-    getOrders()
-  }, [])
-
-  useEffect(() => {
-    if (!selectedMonth) {
-      setReportOrders(0)
-      setReportSales(0)
-      return
-    }
-
-    const getMonthlyReport = async () => {
       const [year, month] = selectedMonth.split('-')
 
       const startOfMonth = new Date(
@@ -102,27 +67,52 @@ export default function Admin({ products, setProducts }) {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('total_price')
+        .select('*')
         .gte('created_at', startOfMonth.toISOString())
         .lt('created_at', startOfNextMonth.toISOString())
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
 
       if (error) {
-        console.log('Error loading monthly report:', error)
+        console.log('Error loading orders:', error)
         return
       }
 
-      setReportOrders(data.length)
+      setOrders(data)
+    }
 
-      const sales = data.reduce(
+    getOrders()
+  }, [selectedMonth])
+
+  useEffect(() => {
+    setOrdersCount(orders.length)
+
+    const sales = orders
+      .filter((order) => order.status === 'confirmed')
+      .reduce(
         (total, order) => total + Number(order.total_price),
         0
       )
 
-      setReportSales(sales)
-    }
+    setTotalSales(sales)
+  }, [orders])
 
-    getMonthlyReport()
-  }, [selectedMonth])
+  useEffect(() => {
+    setReportOrders(
+      orders.filter((order) => order.status !== 'cancelled').length
+    )
+
+    const sales = orders
+      .filter((order) => order.status === 'confirmed')
+      .reduce(
+        (total, order) => total + Number(order.total_price),
+        0
+      )
+
+    setReportSales(sales)
+  }, [orders])
+
+  
   useEffect(() => {
     const getMonthlySales = async () => {
       const now = new Date()
@@ -141,7 +131,7 @@ export default function Admin({ products, setProducts }) {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('total_price, created_at')
+        .select('total_price, created_at, status')
         .gte('created_at', startDate.toISOString())
         .lt('created_at', endDate.toISOString())
 
@@ -167,19 +157,21 @@ export default function Admin({ products, setProducts }) {
         }
       })
 
-      data.forEach((order) => {
-        const date = new Date(order.created_at)
+      data
+        .filter((order) => order.status === 'confirmed')
+        .forEach((order) => {
+          const date = new Date(order.created_at)
 
-        const monthData = months.find(
-          (item) =>
-            item.year === date.getFullYear() &&
-            item.month === date.getMonth()
-        )
+          const monthData = months.find(
+            (item) =>
+              item.year === date.getFullYear() &&
+              item.month === date.getMonth()
+          )
 
-        if (monthData) {
-          monthData.sales += Number(order.total_price)
-        }
-      })
+          if (monthData) {
+            monthData.sales += Number(order.total_price)
+          }
+        })
 
       setMonthlySales(months)
     }
@@ -344,6 +336,33 @@ export default function Admin({ products, setProducts }) {
 
     closeModal()
   }
+
+  const updateOrderStatus = async (orderId, status) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+
+    if (error) {
+      console.log('Error updating order status:', error)
+      alert(error.message)
+      return
+    }
+
+    setOrders((prev) => {
+      if (status === 'cancelled') {
+        return prev.filter((order) => order.id !== orderId)
+      }
+
+      return prev.map((order) =>
+        order.id === orderId
+          ? { ...order, status }
+          : order
+      )
+    })
+  }
+
+
   const logout = async () => {
     const { error } = await supabase.auth.signOut()
 
@@ -451,6 +470,334 @@ export default function Admin({ products, setProducts }) {
           </div>
         </div>
 
+        {/* Orders */}
+        <section className="bg-white rounded-xl p-6 mb-10">
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+
+            <div>
+              <h2 className="text-2xl font-semibold text-[#2E1B12]">
+                الطلبات
+              </h2>
+
+              <p className="mt-2 text-[#6B5A50]">
+                طلبات الشهر المختار
+              </p>
+            </div>
+
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="border border-[#D8C9BC] rounded-md px-4 py-3 outline-none text-[#2E1B12]"
+            >
+              {months.map((month) => (
+                <option
+                  key={month.value}
+                  value={month.value}
+                >
+                  {month.label}
+                </option>
+              ))}
+            </select>
+
+          </div>
+
+          {orders.length === 0 ? (
+
+            <div className="py-10 text-center text-[#6B5A50]">
+              لا توجد طلبات في هذا الشهر
+            </div>
+
+          ) : (
+
+            <>
+              {/* Desktop Table */}
+              <div className="hidden lg:block overflow-hidden">
+
+                <table className="w-full text-right">
+
+                  <thead>
+                    <tr className="border-b border-[#E8DDD2] text-[#6B5A50]">
+
+                      <th className="py-4 px-3">
+                        العميل
+                      </th>
+
+                      <th className="py-4 px-3">
+                        المنتج
+                      </th>
+
+                      <th className="py-4 px-3">
+                        الإجمالي
+                      </th>
+
+                      <th className="py-4 px-3">
+                        التسليم
+                      </th>
+
+                      <th className="py-4 px-3">
+                        الحالة
+                      </th>
+
+                      <th className="py-4 px-3">
+                        الإجراء
+                      </th>
+
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {orders.map((order) => {
+
+                      const item = order.items?.[0]
+
+                      return (
+                        <tr
+                          key={order.id}
+                          className="border-b border-[#E8DDD2] last:border-0"
+                        >
+
+                          <td className="py-4 px-3">
+
+                            <p className="font-semibold text-[#2E1B12]">
+                              {order.customer_name}
+                            </p>
+
+                            <p className="text-sm text-[#6B5A50] mt-1">
+                              {order.phone}
+                            </p>
+
+                          </td>
+
+                          <td className="py-4 px-3">
+
+                            <p className="text-[#2E1B12]">
+                              {item?.name}
+                            </p>
+
+                            <p className="text-sm text-[#6B5A50] mt-1">
+                              {item?.quantity} كجم
+                            </p>
+
+                          </td>
+
+                          <td className="py-4 px-3 text-[#2E1B12]">
+                            {order.total_price} جنيه
+                          </td>
+
+                          <td className="py-4 px-3">
+
+                            <p className="text-[#2E1B12]">
+                              {order.delivery_date}
+                            </p>
+
+                            <p className="text-sm text-[#6B5A50] mt-1">
+                              {order.delivery_time}
+                            </p>
+
+                          </td>
+
+                          <td className="py-4 px-3">
+
+                            <span
+                              className={
+                                order.status === 'confirmed'
+                                  ? 'text-green-700'
+                                  : 'text-yellow-700'
+                              }
+                            >
+                              {order.status === 'confirmed'
+                                ? 'مؤكد'
+                                : 'قيد الانتظار'}
+                            </span>
+
+                          </td>
+
+                          <td className="py-4 px-3">
+
+                            <div className="flex gap-3">
+
+                              {order.status !== 'confirmed' && (
+                                <button
+                                  onClick={() =>
+                                    updateOrderStatus(
+                                      order.id,
+                                      'confirmed'
+                                    )
+                                  }
+                                  className="text-green-700"
+                                >
+                                  تأكيد
+                                </button>
+                              )}
+
+                              {order.status === 'confirmed' && (
+                                <button
+                                  onClick={() =>
+                                    updateOrderStatus(
+                                      order.id,
+                                      'pending'
+                                    )
+                                  }
+                                  className="text-yellow-700"
+                                >
+                                  إرجاع للانتظار
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() =>
+                                  updateOrderStatus(
+                                    order.id,
+                                    'cancelled'
+                                  )
+                                }
+                                className="text-red-700"
+                              >
+                                إلغاء
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+                      )
+                    })}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+
+              {/* Mobile / Tablet Cards */}
+              <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+
+                {orders.map((order) => {
+
+                  const item = order.items?.[0]
+
+                  return (
+                    <div
+                      key={order.id}
+                      className="border border-[#E8DDD2] rounded-lg p-4"
+                    >
+
+                      <div className="flex items-start justify-between gap-3">
+
+                        <div>
+                          <h3 className="font-semibold text-[#2E1B12]">
+                            {order.customer_name}
+                          </h3>
+
+                          <p className="text-sm text-[#6B5A50] mt-1">
+                            {order.phone}
+                          </p>
+                        </div>
+
+                        <span
+                          className={
+                            order.status === 'confirmed'
+                              ? 'text-green-700 text-sm'
+                              : 'text-yellow-700 text-sm'
+                          }
+                        >
+                          {order.status === 'confirmed'
+                            ? 'مؤكد'
+                            : 'قيد الانتظار'}
+                        </span>
+
+                      </div>
+
+                      <div className="mt-4 space-y-2 text-sm">
+
+                        <p className="text-[#6B5A50]">
+                          المنتج:
+                          <span className="text-[#2E1B12] mr-1">
+                            {item?.name}
+                          </span>
+                        </p>
+
+                        <p className="text-[#6B5A50]">
+                          الكمية:
+                          <span className="text-[#2E1B12] mr-1">
+                            {item?.quantity} كجم
+                          </span>
+                        </p>
+
+                        <p className="text-[#6B5A50]">
+                          الإجمالي:
+                          <span className="text-[#2E1B12] mr-1 font-semibold">
+                            {order.total_price} جنيه
+                          </span>
+                        </p>
+
+                        <p className="text-[#6B5A50]">
+                          التسليم:
+                          <span className="text-[#2E1B12] mr-1">
+                            {order.delivery_date} - {order.delivery_time}
+                          </span>
+                        </p>
+
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 mt-5 pt-4 justify-center border-t border-[#E8DDD2]">
+
+                        {order.status !== 'confirmed' && (
+                          <button
+                            onClick={() =>
+                              updateOrderStatus(
+                                order.id,
+                                'confirmed'
+                              )
+                            }
+                            className="text-green-700"
+                          >
+                            تأكيد
+                          </button>
+                        )}
+
+                        {order.status === 'confirmed' && (
+                          <button
+                            onClick={() =>
+                              updateOrderStatus(
+                                order.id,
+                                'pending'
+                              )
+                            }
+                            className="text-yellow-700"
+                          >
+                            إرجاع للانتظار
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() =>
+                            updateOrderStatus(
+                              order.id,
+                              'cancelled'
+                            )
+                          }
+                          className="text-red-700"
+                        >
+                          إلغاء
+                        </button>
+
+                      </div>
+
+                    </div>
+                  )
+                })}
+
+              </div>
+            </>
+          )}
+
+        </section>
+
         {/* Sales Reports */}
         <section className="bg-white rounded-xl p-6 mb-10">
 
@@ -466,24 +813,6 @@ export default function Admin({ products, setProducts }) {
               </p>
             </div>
 
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="border border-[#D8C9BC] rounded-md px-4 py-3 outline-none text-[#2E1B12]"
-            >
-              <option value="">
-                اختر الشهر
-              </option>
-
-              {months.map((month) => (
-                <option
-                  key={month.value}
-                  value={month.value}
-                >
-                  {month.label}
-                </option>
-              ))}
-            </select>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
 
               <div className="bg-[#F8F3EA] rounded-lg p-5">

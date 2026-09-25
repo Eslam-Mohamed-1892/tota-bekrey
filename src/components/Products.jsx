@@ -51,6 +51,7 @@ export default function Products({ products }) {
           delivery_date: values.deliveryDate,
           delivery_time: values.deliveryTime,
           total_price: selectedProduct.total,
+          status: 'pending',
           items: [
             {
               name: selectedProduct.name,
@@ -58,8 +59,7 @@ export default function Products({ products }) {
               quantity: selectedProduct.quantity,
             },
           ],
-        },
-      ])
+        },])
 
     if (error) {
       console.log('Error creating order:', error)
