@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { FiMapPin, FiPhone, FiMessageCircle } from "react-icons/fi";
+import {
+    FiMapPin,
+    FiPhone,
+    FiMessageCircle,
+} from "react-icons/fi";
+import { FaFacebookF } from "react-icons/fa";
 import { supabase } from "../supabase";
 
 export default function Contact() {
@@ -9,7 +14,7 @@ export default function Contact() {
         const fetchSettings = async () => {
             const { data, error } = await supabase
                 .from("settings")
-                .select("phone, whatsapp, location, map_url")
+                .select("phone, whatsapp, location, map_url, facebook_url")
                 .eq("id", 1)
                 .single();
 
@@ -72,7 +77,7 @@ export default function Contact() {
                     </div>
 
                     {/* Contact Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                         {/* Address */}
                         <div className="bg-white rounded-xl p-6 text-center flex flex-col items-center">
@@ -146,6 +151,34 @@ export default function Contact() {
                             </a>
 
                         </div>
+
+                        {/* Facebook */}
+                        {settings.facebook_url && (
+                            <div className="bg-white rounded-xl p-6 text-center flex flex-col items-center">
+
+                                <FaFacebookF className="text-3xl text-[#5A3825]" />
+
+                                <h2 className="mt-4 text-xl font-semibold text-[#2E1B12]">
+                                    Facebook
+                                </h2>
+
+                                <p className="mt-3 text-[#6B5A50]">
+                                    تابعنا على صفحتنا على Facebook
+                                </p>
+
+                                <a
+                                    href={settings.facebook_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-auto pt-5"
+                                >
+                                    <span className="inline-block bg-[#5A3825] text-white px-5 py-2.5 rounded-md active:bg-[#3F271A]">
+                                        صفحة Facebook
+                                    </span>
+                                </a>
+
+                            </div>
+                        )}
 
                     </div>
                 </div>

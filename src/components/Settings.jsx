@@ -7,36 +7,54 @@ export default function Settings({ onLogout }) {
         whatsapp: "",
         location: "",
         map_url: "",
+        facebook_url: "",
     });
+
+    const [paymentMethods, setPaymentMethods] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
     useEffect(() => {
-        const fetchSettings = async () => {
-            const { data, error } = await supabase
-                .from("settings")
-                .select("*")
-                .eq("id", 1)
-                .single();
+        const fetchData = async () => {
+            const { data: settingsData, error: settingsError } =
+                await supabase
+                    .from("settings")
+                    .select("*")
+                    .eq("id", 1)
+                    .single();
 
-            if (error) {
-                console.error(error);
+            if (settingsError) {
+                console.error(settingsError);
+                return;
+            }
+
+            const { data: paymentData, error: paymentError } =
+                await supabase
+                    .from("payment_methods")
+                    .select("*")
+                    .order("id");
+
+            if (paymentError) {
+                console.error(paymentError);
                 return;
             }
 
             setSettings({
-                phone: data.phone || "",
-                whatsapp: data.whatsapp || "",
-                location: data.location || "",
-                map_url: data.map_url || "",
+                phone: settingsData.phone || "",
+                whatsapp: settingsData.whatsapp || "",
+                location: settingsData.location || "",
+                map_url: settingsData.map_url || "",
+                facebook_url: settingsData.facebook_url || "",
             });
+
+            setPaymentMethods(paymentData || []);
 
             setLoading(false);
         };
 
-        fetchSettings();
+        fetchData();
     }, []);
 
     const handleChange = (e) => {
@@ -48,31 +66,62 @@ export default function Settings({ onLogout }) {
         }));
     };
 
+    const handlePaymentChange = (id, field, value) => {
+        setPaymentMethods((prev) =>
+            prev.map((method) =>
+                method.id === id
+                    ? {
+                        ...method,
+                        [field]: value,
+                    }
+                    : method
+            )
+        );
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
 
         setSaving(true);
         setMessage("");
 
-        const { error } = await supabase
+        const { error: settingsError } = await supabase
             .from("settings")
             .update({
                 phone: settings.phone,
                 whatsapp: settings.whatsapp,
                 location: settings.location,
                 map_url: settings.map_url,
+                facebook_url: settings.facebook_url,
                 updated_at: new Date().toISOString(),
             })
             .eq("id", 1);
 
-        setSaving(false);
-
-        if (error) {
-            console.error(error);
+        if (settingsError) {
+            console.error(settingsError);
+            setSaving(false);
             setMessage("حدث خطأ أثناء حفظ الإعدادات");
             return;
         }
 
+        for (const method of paymentMethods) {
+            const { error } = await supabase
+                .from("payment_methods")
+                .update({
+                    is_active: method.is_active,
+                    payment_number: method.payment_number,
+                })
+                .eq("id", method.id);
+
+            if (error) {
+                console.error(error);
+                setSaving(false);
+                setMessage("حدث خطأ أثناء حفظ طرق الدفع");
+                return;
+            }
+        }
+
+        setSaving(false);
         setMessage("تم حفظ الإعدادات بنجاح");
     };
 
@@ -97,100 +146,201 @@ export default function Settings({ onLogout }) {
             </h2>
 
             <p className="text-[#6B5A50] mb-8">
-                تعديل بيانات التواصل والموقع
+                تعديل بيانات التواصل وطرق الدفع
             </p>
 
             <form
                 onSubmit={handleSave}
-                className="bg-white rounded-2xl p-6 space-y-6 max-w-3xl"
+                className="space-y-8 max-w-3xl"
             >
-                {/* Phone */}
-                <div>
-                    <label className="block mb-2 font-medium">
-                        رقم الهاتف
-                    </label>
 
-                    <input
-                        type="text"
-                        name="phone"
-                        value={settings.phone}
-                        onChange={handleChange}
-                        className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
-                    />
-                </div>
+                {/* Payment Methods */}
+                <div className="bg-white rounded-2xl p-6">
+                    <h3 className="text-xl font-bold mb-2">
+                        طرق الدفع
+                    </h3>
 
-                {/* WhatsApp */}
-                <div>
-                    <label className="block mb-2 font-medium">
-                        رقم الواتساب
-                    </label>
-
-                    <input
-                        type="text"
-                        name="whatsapp"
-                        value={settings.whatsapp}
-                        onChange={handleChange}
-                        placeholder="مثال: 201028280847"
-                        className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
-                    />
-
-                    <p className="text-sm text-[#6B5A50] mt-2">
-                        يمكن كتابة الرقم بصيغة مصرية أو دولية
+                    <p className="text-[#6B5A50] text-sm mb-6">
+                        التحكم في ظهور طرق الدفع ورقم التحويل
                     </p>
+
+                    <div className="space-y-5">
+                        {paymentMethods.map((method) => (
+                            <div
+                                key={method.id}
+                                className="border border-[#E5D9CC] rounded-xl p-4"
+                            >
+                                <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <p className="font-semibold">
+                                            {method.name}
+                                        </p>
+
+                                        <p className="text-sm text-[#6B5A50] mt-1">
+                                            {method.is_active
+                                                ? "ظاهرة للعملاء"
+                                                : "مخفية عن العملاء"}
+                                        </p>
+                                    </div>
+
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={method.is_active}
+                                            onChange={(e) =>
+                                                handlePaymentChange(
+                                                    method.id,
+                                                    "is_active",
+                                                    e.target.checked
+                                                )
+                                            }
+                                            className="w-5 h-5 accent-[#5A3825]"
+                                        />
+
+                                        <span className="text-sm">
+                                            إظهار
+                                        </span>
+                                    </label>
+                                </div>
+
+                                {method.code !== "cash_on_delivery" && (
+                                    <div className="mt-4">
+                                        <label className="block mb-2 text-sm font-medium">
+                                            رقم التحويل
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={method.payment_number || ""}
+                                            onChange={(e) =>
+                                                handlePaymentChange(
+                                                    method.id,
+                                                    "payment_number",
+                                                    e.target.value
+                                                )
+                                            }
+                                            placeholder="رقم الموبايل"
+                                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Location */}
-                <div>
-                    <label className="block mb-2 font-medium">
-                        العنوان
-                    </label>
+                {/* Contact Settings */}
+                <div className="bg-white rounded-2xl p-6 space-y-6">
+                    <h3 className="text-xl font-bold">
+                        بيانات التواصل
+                    </h3>
 
-                    <textarea
-                        name="location"
-                        value={settings.location}
-                        onChange={handleChange}
-                        rows="4"
-                        className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825] resize-none"
-                    />
+                    {/* Phone */}
+                    <div>
+                        <label className="block mb-2 font-medium">
+                            رقم الهاتف
+                        </label>
 
-                    <p className="text-sm text-[#6B5A50] mt-2">
-                        كل سطر سيظهر كسطر منفصل في صفحة التواصل
-                    </p>
-                </div>
+                        <input
+                            type="text"
+                            name="phone"
+                            value={settings.phone}
+                            onChange={handleChange}
+                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
 
-                {/* Map URL */}
-                <div>
-                    <label className="block mb-2 font-medium">
-                        رابط الموقع على الخريطة
-                    </label>
+                    {/* WhatsApp */}
+                    <div>
+                        <label className="block mb-2 font-medium">
+                            رقم الواتساب
+                        </label>
 
-                    <input
-                        type="text"
-                        name="map_url"
-                        value={settings.map_url}
-                        onChange={handleChange}
-                        className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
-                    />
-                </div>
+                        <input
+                            type="text"
+                            name="whatsapp"
+                            value={settings.whatsapp}
+                            onChange={handleChange}
+                            placeholder="مثال: 201028280847"
+                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
 
-                <div className="flex items-center justify-between gap-4">
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="bg-[#5A3825] text-white px-6 py-3 rounded-lg active:bg-[#3F271A] disabled:opacity-60"
-                    >
-                        {saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
-                    </button>
-
-                    {message && (
-                        <p className="text-[#5A3825] text-sm">
-                            {message}
+                        <p className="text-sm text-[#6B5A50] mt-2">
+                            يمكن كتابة الرقم بصيغة مصرية أو دولية
                         </p>
-                    )}
+                    </div>
+
+                    {/* Facebook */}
+                    <div>
+                        <label className="block mb-2 font-medium">
+                            رابط صفحة Facebook
+                        </label>
+
+                        <input
+                            type="text"
+                            name="facebook_url"
+                            value={settings.facebook_url}
+                            onChange={handleChange}
+                            placeholder="https://www.facebook.com/..."
+                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                        <label className="block mb-2 font-medium">
+                            العنوان
+                        </label>
+
+                        <textarea
+                            name="location"
+                            value={settings.location}
+                            onChange={handleChange}
+                            rows="4"
+                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825] resize-none"
+                        />
+
+                        <p className="text-sm text-[#6B5A50] mt-2">
+                            كل سطر سيظهر كسطر منفصل في صفحة التواصل
+                        </p>
+                    </div>
+
+                    {/* Map URL */}
+                    <div>
+                        <label className="block mb-2 font-medium">
+                            رابط الموقع على الخريطة
+                        </label>
+
+                        <input
+                            type="text"
+                            name="map_url"
+                            value={settings.map_url}
+                            onChange={handleChange}
+                            className="w-full border border-[#E5D9CC] rounded-lg px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 pt-2">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="bg-[#5A3825] text-white px-6 py-3 rounded-lg active:bg-[#3F271A] disabled:opacity-60"
+                        >
+                            {saving
+                                ? "جاري الحفظ..."
+                                : "حفظ الإعدادات"}
+                        </button>
+
+                        {message && (
+                            <p className="text-[#5A3825] text-sm">
+                                {message}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </form>
 
-            {/* Logout inside Settings */}
+            {/* Logout */}
             <div className="mt-8">
                 <button
                     onClick={onLogout}

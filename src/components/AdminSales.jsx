@@ -567,7 +567,6 @@ export default function AdminSales() {
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
                                     <div>
-
                                         <h3 className="font-bold text-lg">
                                             {order.customer_name}
                                         </h3>
@@ -576,24 +575,33 @@ export default function AdminSales() {
                                             {order.phone}
                                         </p>
 
+                                        {order.additional_phone && (
+                                            <p className="text-sm text-[#6B5A50] mt-1">
+                                                هاتف إضافي: {order.additional_phone}
+                                            </p>
+                                        )}
+
                                         <p className="text-sm text-[#6B5A50] mt-1">
                                             {order.address}
                                         </p>
-
                                     </div>
-
                                     <div>
 
                                         <p className="font-bold text-[#5A3825]">
                                             {order.total_price} جنيه
                                         </p>
 
+                                        {order.payment_method && (
+                                            <p className="text-sm text-[#6B5A50] mt-1">
+                                                طريقة الدفع: {order.payment_method}
+                                            </p>
+                                        )}
+
                                         <p className="text-sm text-[#6B5A50] mt-1">
                                             الحالة: {getStatusText(order.status)}
                                         </p>
 
                                     </div>
-
                                 </div>
 
 
