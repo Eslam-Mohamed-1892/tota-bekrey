@@ -4,106 +4,140 @@ import { supabase } from './supabase'
 
 import Header from './components/Header'
 import Footer from './components/Footer'
-import Products from './components/Products'
 import Contact from './components/Contact'
 
+import Products from './pages/Products'
 import Home from './pages/Home'
 import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
+import Dashboard from './pages/Dashboard'
+import Cart from './pages/Cart'
 
 export default function App() {
-  const location = useLocation()
+	const location = useLocation()
 
-  const isAdmin = location.pathname === '/admin'
-  const isAdminLogin = location.pathname === '/admin-login'
+	const isAdmin = location.pathname === '/admin'
+	const isAdminLogin = location.pathname === '/admin-login'
+	const isDashboard = location.pathname === '/dashboard'
 
-  const [products, setProducts] = useState([])
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+	const [products, setProducts] = useState([])
+	const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+	const [cart, setCart] = useState(() => {
+		const savedCart = localStorage.getItem('cart')
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
+		return savedCart ? JSON.parse(savedCart) : []
+	})
+	useEffect(() => {
+		localStorage.setItem('cart', JSON.stringify(cart))
+	}, [cart])
+	console.log("Cart:", cart)
 
-      setIsAdminLoggedIn(!!data.session)
-    }
+	useEffect(() => {
+		const checkSession = async () => {
+			const { data } = await supabase.auth.getSession()
 
-    checkSession()
+			setIsAdminLoggedIn(!!data.session)
+		}
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdminLoggedIn(!!session)
-    })
+		checkSession()
 
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setIsAdminLoggedIn(!!session)
+		})
 
-  useEffect(() => {
-    const getProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
+		return () => {
+			subscription.unsubscribe()
+		}
+	}, [])
 
-      if (error) {
-        console.log('Error loading products:', error)
-        return
-      }
+	useEffect(() => {
+		const getProducts = async () => {
+			const { data, error } = await supabase
+				.from('products')
+				.select('*')
 
-      console.log('Products from Supabase:', data)
+			if (error) {
+				console.log('Error loading products:', error)
+				return
+			}
 
-      setProducts(data)
-    }
+			console.log('Products from Supabase:', data)
 
-    getProducts()
-  }, [isAdminLoggedIn])
+			setProducts(data)
+		}
 
-  return (
-    <>
-      {!isAdmin && !isAdminLogin && <Header />}
+		getProducts()
+	}, [isAdminLoggedIn])
 
-      <Routes>
-        <Route path="/" element={<Home />} />
+	return (
+		<>
+			{!isAdmin && !isAdminLogin && !isDashboard && <Header cart={cart} />}
 
-        <Route
-          path="/products"
-          element={
-            <Products
-              products={products}
-            />
-          }
-        />
+			<Routes>
+				<Route path="/" element={<Home />} />
 
-        <Route path="/contact" element={<Contact />} />
+				<Route
+					path="/products"
+					element={
+						<Products
+							products={products}
+							setCart={setCart}
+						/>}
+				/>
+				<Route path="/contact" element={<Contact />} />
 
-        <Route
-          path="/admin-login"
-          element={
-            <AdminLogin
-              setIsAdminLoggedIn={setIsAdminLoggedIn}
-            />
-          }
-        />
+				<Route
+					path="/admin-login"
+					element={
+						<AdminLogin
+							setIsAdminLoggedIn={setIsAdminLoggedIn}
+						/>
+					}
+				/>
 
-        <Route
-          path="/admin"
-          element={
-            isAdminLoggedIn ? (
-              <Admin
-                products={products}
-                setProducts={setProducts}
-              />
-            ) : (
-              <AdminLogin
-                setIsAdminLoggedIn={setIsAdminLoggedIn}
-              />
-            )
-          }
-        />
-      </Routes>
+				<Route
+					path="/admin"
+					element={
+						isAdminLoggedIn ? (
+							<Admin
+								products={products}
+								setProducts={setProducts}
+							/>
+						) : (
+							<AdminLogin
+								setIsAdminLoggedIn={setIsAdminLoggedIn}
+							/>
+						)
+					}
+				/>
+				<Route
+					path="/dashboard"
+					element={
+						isAdminLoggedIn ? (
+							<Dashboard
+								products={products}
+								setProducts={setProducts}
+							/>
+						) : (
+							<AdminLogin
+								setIsAdminLoggedIn={setIsAdminLoggedIn}
+							/>
+						)
+					}
+				/><Route
+					path="/cart"
+					element={
+						<Cart
+							cart={cart}
+							setCart={setCart}
+						/>
+					}
+				/>
+			</Routes>
 
-      {!isAdmin && !isAdminLogin && <Footer />}
-    </>
-  )
+			{!isAdmin && !isAdminLogin && !isDashboard && <Footer />}
+		</>
+	)
 }

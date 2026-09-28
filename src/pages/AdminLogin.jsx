@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import logo from '../assets/images/logo3.jpeg'
 
 export default function AdminLogin({ setIsAdminLoggedIn }) {
   const [email, setEmail] = useState('')
@@ -21,7 +22,7 @@ export default function AdminLogin({ setIsAdminLoggedIn }) {
 
     if (data.user) {
       setIsAdminLoggedIn(true)
-      navigate('/admin')
+      navigate('/dashboard')
     }
   }
 
@@ -30,18 +31,20 @@ export default function AdminLogin({ setIsAdminLoggedIn }) {
 
       <div className="bg-white w-full max-w-md rounded-xl p-6">
 
+        <div className="w-50 h-50 lg:w-full lg:h-full rounded-full lg:rounded-2xl overflow-hidden mx-auto mb-4">
+          <img
+            src={logo}
+            alt="مخبوزات توتا"
+            className="w-full h-full object-cover"
+          />
+        </div>
         <p className="text-[#5A3825] font-medium mb-2">
-          مخبوزات توتة
+          مخبوزات توتا
         </p>
 
         <h1 className="text-2xl font-bold text-[#2E1B12]">
           دخول الإدارة
         </h1>
-
-        <p className="mt-2 text-[#6B5A50]">
-          أدخل بيانات الدخول للمتابعة
-        </p>
-
         {/* Email */}
         <input
           type="email"

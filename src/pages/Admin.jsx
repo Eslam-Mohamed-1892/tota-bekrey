@@ -177,7 +177,7 @@ export default function Admin({ products, setProducts }) {
     }
 
     getMonthlySales()
-  }, [])
+}, [orders])
 
   const months = Array.from({ length: 12 }, (_, index) => {
     const date = new Date()
