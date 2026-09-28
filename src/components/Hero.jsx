@@ -1,4 +1,7 @@
 import heroImage from '../assets/images/hero/hero1.jpg'
+import { Link } from 'react-router-dom'
+import Products from '../pages/Products'
+
 
 export default function Hero() {
   return (
@@ -19,7 +22,7 @@ export default function Hero() {
           {/* Content */}
           <div className="max-w-xl">
             <p className="text-[#5A3825] font-medium mb-3">
-              مخبوزات توتة
+              مخبوزات توتا
             </p>
 
             <h1 className="text-4xl md:text-5xl font-bold text-[#2E1B12] leading-tight">
@@ -30,9 +33,9 @@ export default function Hero() {
               مخبوزات طازجة تُحضّر بحب، لتستمتع بطعم بسيط ولذيذ في كل مرة.
             </p>
 
-            <button className="mt-8 bg-[#5A3825] text-white px-6 py-3 rounded-md active:bg-[#3F271A]">
+            <Link to="/products" className="inline-block mt-8 bg-[#5A3825] text-white px-6 py-3 rounded-md active:bg-[#3F271A]">
               اكتشف المخبوزات
-            </button>
+            </Link>
           </div>
 
         </div>

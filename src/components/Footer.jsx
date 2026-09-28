@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="text-center">
 
           <h2 className="text-xl md:text-2xl font-semibold">
-            مخبوزات توتة
+            مخبوزات توتا
           </h2>
 
           <p className="mt-2 text-sm text-white/80">
@@ -19,7 +19,7 @@ export default function Footer() {
         <div className="border-t border-white/20 mt-6 pt-5 text-center">
 
           <p className="text-sm text-white/70">
-            © 2026 مخبوزات توتة. جميع الحقوق محفوظة.
+            © 2026 مخبوزات توتا. جميع الحقوق محفوظة.
           </p>
 
         </div>

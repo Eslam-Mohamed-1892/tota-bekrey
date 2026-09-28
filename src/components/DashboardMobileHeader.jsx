@@ -16,7 +16,7 @@ export default function DashboardMobileHeader({
 
       <div className="text-right">
         <h1 className="text-base font-bold text-[#5A3825]">
-          مخبوزات توتة
+          مخبوزات توتا
         </h1>
 
         <p className="text-xs text-[#6B5A50]">

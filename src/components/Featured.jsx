@@ -1,27 +1,8 @@
 import { Link } from 'react-router-dom'
 
-const products = [
-  {
-    id: 1,
-    name: 'كرواسون',
-    description: 'هش وخفيف بطعم الزبدة',
-    price: 60,
-  },
-  {
-    id: 2,
-    name: 'سينابون',
-    description: 'طري وغني بالقرفة',
-    price: 70,
-  },
-  {
-    id: 3,
-    name: 'كوكيز',
-    description: 'مخبوز طازج برقائق الشوكولاتة',
-    price: 50,
-  },
-]
+export default function Featured({ products }) {
+  const featuredProducts = products.slice(0, 3)
 
-export default function Featured() {
   return (
     <section className="bg-[#F8F3EA] py-16 md:py-20">
       <div className="max-w-6xl mx-auto px-5">
@@ -40,14 +21,23 @@ export default function Featured() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
 
-          {products.map((product) => (
+          {featuredProducts.map((product) => (
             <article
               key={product.id}
               className="bg-white rounded-xl overflow-hidden flex flex-col"
             >
 
+              {/* Image */}
               <div className="h-56 bg-[#EDE3D6]">
-                {/* صورة المنتج */}
+
+                {product.image && (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+
               </div>
 
               <div className="p-6 flex flex-col flex-1">
@@ -86,3 +76,4 @@ export default function Featured() {
     </section>
   )
 }
+

@@ -76,8 +76,10 @@ export default function App() {
 			{!isAdmin && !isAdminLogin && !isDashboard && <Header cart={cart} />}
 
 			<Routes>
-				<Route path="/" element={<Home />} />
-
+				<Route
+					path="/"
+					element={<Home products={products} />}
+				/>
 				<Route
 					path="/products"
 					element={

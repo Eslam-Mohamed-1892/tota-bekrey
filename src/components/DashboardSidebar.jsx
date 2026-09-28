@@ -14,7 +14,7 @@ export default function DashboardSidebar({
                 {/* Logo / Brand */}
                 <div className="p-6 border-b border-[#E8DED2]">
                     <h1 className="text-xl font-bold text-[#5A3825]">
-                        مخبوزات توتة
+                        مخبوزات توتا
                     </h1>
 
                     <p className="text-sm text-[#6B5A50] mt-1">
@@ -73,7 +73,7 @@ export default function DashboardSidebar({
 
                     <div>
                         <h1 className="text-xl font-bold text-[#5A3825]">
-                            مخبوزات توتة
+                            مخبوزات توتا
                         </h1>
 
                         <p className="text-sm text-[#6B5A50] mt-1">

@@ -423,7 +423,7 @@ export default function Admin({ products, setProducts }) {
         <div className="mb-10">
 
           <p className="text-[#5A3825] font-medium mb-2">
-            مخبوزات توتة
+            مخبوزات توتا
           </p>
 
           <h1 className="text-3xl md:text-4xl font-bold text-[#2E1B12]">

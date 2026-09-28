@@ -6,7 +6,7 @@ export default function About() {
         <div className="max-w-2xl">
 
           <p className="text-[#5A3825] font-medium mb-3">
-            من مطبخ توتة
+            عن مطبخ توتا
           </p>
 
           <h2 className="text-3xl md:text-4xl font-bold text-[#2E1B12]">

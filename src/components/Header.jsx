@@ -22,7 +22,7 @@ export default function Header({ cart }) {
           onClick={closeMenu}
           className="text-xl font-semibold"
         >
-          مخبوزات توتة
+          مخبوزات توتا
         </Link>
 
         {/* Desktop Navigation */}
