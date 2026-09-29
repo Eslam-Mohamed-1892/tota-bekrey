@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
+import { toast } from "react-hot-toast";
 
 import DashboardSidebar from "../components/DashboardSidebar";
 import DashboardMobileHeader from "../components/DashboardMobileHeader";
@@ -39,9 +40,11 @@ export default function Dashboard({ products, setProducts }) {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+
+        toast.success("تم تسجيل الخروج بنجاح");
+
         navigate("/admin-login");
     };
-
     return (
         <div
             dir="rtl"

@@ -266,8 +266,12 @@ ${selectedPaymentMethod?.payment_number
       ),
     }),
 
-    onSubmit: (values) => {
-      confirmOrder(values)
+    onSubmit: async (values) => {
+      const success = await confirmOrder(values)
+
+      if (success) {
+        toast.success("تم تأكيد الطلب بنجاح")
+      }
     },
   })
 
@@ -504,9 +508,8 @@ ${selectedPaymentMethod?.payment_number
                   </span>
 
                   <FiChevronDown
-                    className={`text-xl transition-transform ${
-                      paymentOpen ? 'rotate-180' : ''
-                    }`}
+                    className={`text-xl transition-transform ${paymentOpen ? 'rotate-180' : ''
+                      }`}
                   />
 
                 </button>

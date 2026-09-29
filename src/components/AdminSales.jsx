@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
 import { supabase } from '../supabase'
 import {
     LineChart,
@@ -81,7 +82,7 @@ export default function AdminSales() {
 
         if (error) {
             console.log('Error updating order:', error)
-            alert('حدث خطأ أثناء تحديث حالة الطلب')
+            toast.error('حدث خطأ أثناء تحديث حالة الطلب')
             return
         }
 
@@ -91,6 +92,10 @@ export default function AdminSales() {
                     ? { ...order, status }
                     : order
             )
+        )
+
+        toast.success(
+            `تم تحديث حالة الطلب إلى ${getStatusText(status)}`
         )
     }
 
@@ -102,23 +107,25 @@ export default function AdminSales() {
 
         if (error) {
             console.log('Error deleting order:', error)
-            alert('حدث خطأ أثناء حذف الطلب')
+            toast.error('حدث خطأ أثناء حذف الطلب')
             return
         }
 
         setOrders((prev) =>
             prev.filter((order) => order.id !== id)
         )
+
+        toast.success('تم حذف الطلب بنجاح')
     }
 
     const addExpense = async () => {
         if (!expenseAmount || Number(expenseAmount) <= 0) {
-            alert('اكتب قيمة المصروف')
+            toast.error('اكتب قيمة المصروف')
             return
         }
 
         if (!expenseDate) {
-            alert('اختر تاريخ المصروف')
+            toast.error('اختر تاريخ المصروف')
             return
         }
 
@@ -136,7 +143,7 @@ export default function AdminSales() {
 
         if (error) {
             console.log('Error adding expense:', error)
-            alert('حدث خطأ أثناء إضافة المصروف')
+            toast.error('حدث خطأ أثناء إضافة المصروف')
             return
         }
 
@@ -151,6 +158,8 @@ export default function AdminSales() {
         setExpenseDate(
             new Date().toISOString().split('T')[0]
         )
+
+        toast.success('تم إضافة المصروف بنجاح')
     }
 
     const deleteExpense = async (id) => {
@@ -167,13 +176,15 @@ export default function AdminSales() {
 
         if (error) {
             console.log('Error deleting expense:', error)
-            alert('حدث خطأ أثناء حذف المصروف')
+            toast.error('حدث خطأ أثناء حذف المصروف')
             return
         }
 
         setExpenses((prev) =>
             prev.filter((expense) => expense.id !== id)
         )
+
+        toast.success('تم حذف المصروف بنجاح')
     }
 
     const getStatusText = (status) => {
@@ -584,12 +595,14 @@ export default function AdminSales() {
                                         <p className="text-sm text-[#6B5A50] mt-1">
                                             {order.address}
                                         </p>
+
                                         {order.order_note && (
                                             <p className="text-sm text-[#6B5A50] mt-2">
                                                 ملاحظات الطلب: {order.order_note}
                                             </p>
                                         )}
                                     </div>
+
                                     <div>
 
                                         <p className="font-bold text-[#5A3825]">
@@ -1019,8 +1032,6 @@ export default function AdminSales() {
                             <p>
                                 وقت التسليم: {orderToDelete.delivery_time}
                             </p>
-                            
-
 
                         </div>
 

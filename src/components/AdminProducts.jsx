@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'react-hot-toast'
 import { supabase } from '../supabase'
 
 export default function AdminProducts({ products, setProducts }) {
@@ -43,6 +44,7 @@ export default function AdminProducts({ products, setProducts }) {
         setEditImagePreview(product.image)
         setModalType('edit')
     }
+
     const openDeleteModal = (product) => {
         setSelectedProduct(product)
         setModalType('delete')
@@ -69,7 +71,7 @@ export default function AdminProducts({ products, setProducts }) {
 
                 if (uploadError) {
                     console.log('Image upload error:', uploadError)
-                    alert(uploadError.message)
+                    toast.error(uploadError.message)
                     return
                 }
 
@@ -96,7 +98,7 @@ export default function AdminProducts({ products, setProducts }) {
 
             if (error) {
                 console.log('Error adding product:', error)
-                alert(error.message)
+                toast.error(error.message)
                 return
             }
 
@@ -109,10 +111,14 @@ export default function AdminProducts({ products, setProducts }) {
                 image: '',
                 sale_type: 'kg',
             })
+
             setImagePreview('')
             closeModal()
+
+            toast.success('تم إضافة المنتج بنجاح')
         } catch (error) {
             console.log('Add product error:', error)
+            toast.error('حدث خطأ أثناء إضافة المنتج')
         }
     }
 
@@ -131,7 +137,7 @@ export default function AdminProducts({ products, setProducts }) {
 
                 if (uploadError) {
                     console.log('Image upload error:', uploadError)
-                    alert(uploadError.message)
+                    toast.error(uploadError.message)
                     return
                 }
 
@@ -156,7 +162,7 @@ export default function AdminProducts({ products, setProducts }) {
 
             if (error) {
                 console.log('Error updating product:', error)
-                alert(error.message)
+                toast.error(error.message)
                 return
             }
 
@@ -169,8 +175,11 @@ export default function AdminProducts({ products, setProducts }) {
             )
 
             closeModal()
+
+            toast.success('تم حفظ التغييرات بنجاح')
         } catch (error) {
             console.log('Update product error:', error)
+            toast.error('حدث خطأ أثناء حفظ التغييرات')
         }
     }
 
@@ -203,7 +212,7 @@ export default function AdminProducts({ products, setProducts }) {
 
             if (error) {
                 console.log('Error deleting product:', error)
-                alert(error.message)
+                toast.error(error.message)
                 return
             }
 
@@ -214,8 +223,11 @@ export default function AdminProducts({ products, setProducts }) {
             )
 
             closeModal()
+
+            toast.success('تم حذف المنتج بنجاح')
         } catch (error) {
             console.log('Delete product error:', error)
+            toast.error('حدث خطأ أثناء حذف المنتج')
         }
     }
 
@@ -252,6 +264,7 @@ export default function AdminProducts({ products, setProducts }) {
                     </p>
                 </div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                     <div

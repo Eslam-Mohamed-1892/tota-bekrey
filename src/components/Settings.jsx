@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { supabase } from "../supabase";
 
 export default function Settings({ onLogout }) {
@@ -14,7 +15,6 @@ export default function Settings({ onLogout }) {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -83,7 +83,6 @@ export default function Settings({ onLogout }) {
         e.preventDefault();
 
         setSaving(true);
-        setMessage("");
 
         const { error: settingsError } = await supabase
             .from("settings")
@@ -100,7 +99,7 @@ export default function Settings({ onLogout }) {
         if (settingsError) {
             console.error(settingsError);
             setSaving(false);
-            setMessage("حدث خطأ أثناء حفظ الإعدادات");
+            toast.error("حدث خطأ أثناء حفظ الإعدادات");
             return;
         }
 
@@ -116,13 +115,13 @@ export default function Settings({ onLogout }) {
             if (error) {
                 console.error(error);
                 setSaving(false);
-                setMessage("حدث خطأ أثناء حفظ طرق الدفع");
+                toast.error("حدث خطأ أثناء حفظ طرق الدفع");
                 return;
             }
         }
 
         setSaving(false);
-        setMessage("تم حفظ الإعدادات بنجاح");
+        toast.success("تم حفظ الإعدادات بنجاح");
     };
 
     if (loading) {
@@ -320,7 +319,7 @@ export default function Settings({ onLogout }) {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 pt-2">
+                    <div className="pt-2">
                         <button
                             type="submit"
                             disabled={saving}
@@ -330,12 +329,6 @@ export default function Settings({ onLogout }) {
                                 ? "جاري الحفظ..."
                                 : "حفظ الإعدادات"}
                         </button>
-
-                        {message && (
-                            <p className="text-[#5A3825] text-sm">
-                                {message}
-                            </p>
-                        )}
                     </div>
                 </div>
             </form>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import logo from '../assets/images/logo3.jpeg'
+import { toast } from "react-hot-toast";
 
 export default function AdminLogin({ setIsAdminLoggedIn }) {
   const [email, setEmail] = useState('')
@@ -24,6 +25,7 @@ export default function AdminLogin({ setIsAdminLoggedIn }) {
       setIsAdminLoggedIn(true)
       navigate('/dashboard')
     }
+    toast.success("تم تسجيل الدخول بنجاح");
   }
 
   return (
