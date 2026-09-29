@@ -584,6 +584,11 @@ export default function AdminSales() {
                                         <p className="text-sm text-[#6B5A50] mt-1">
                                             {order.address}
                                         </p>
+                                        {order.order_note && (
+                                            <p className="text-sm text-[#6B5A50] mt-2">
+                                                ملاحظات الطلب: {order.order_note}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
 
@@ -1014,6 +1019,8 @@ export default function AdminSales() {
                             <p>
                                 وقت التسليم: {orderToDelete.delivery_time}
                             </p>
+                            
+
 
                         </div>
 
