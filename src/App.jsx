@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
+import { Toaster } from 'react-hot-toast'
 
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -140,6 +141,7 @@ export default function App() {
 			</Routes>
 
 			{!isAdmin && !isAdminLogin && !isDashboard && <Footer />}
+			<Toaster position="top-center" />
 		</>
 	)
 }

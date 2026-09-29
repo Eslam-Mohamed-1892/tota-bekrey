@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
+import { FiChevronDown } from 'react-icons/fi'
+import { toast } from 'react-hot-toast'
 import { supabase } from '../supabase'
 
 export default function Cart({ cart, setCart }) {
   const [location, setLocation] = useState(null)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
-  const today = new Date().toISOString().split('T')[0]
   const [paymentMethods, setPaymentMethods] = useState([])
+  const [whatsappNumber, setWhatsappNumber] = useState('')
+  const [paymentOpen, setPaymentOpen] = useState(false)
 
+  const today = new Date().toISOString().split('T')[0]
 
   const cartTotal = cart.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   )
+
   useEffect(() => {
     const getPaymentMethods = async () => {
       const { data, error } = await supabase
@@ -27,12 +32,26 @@ export default function Cart({ cart, setCart }) {
         return
       }
 
-      setPaymentMethods(data)
-      console.log('Payment Methods:', data)
+      setPaymentMethods(data || [])
+    }
 
+    const getWhatsappNumber = async () => {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('whatsapp')
+        .eq('id', 1)
+        .single()
+
+      if (error) {
+        console.log('Error loading WhatsApp number:', error)
+        return
+      }
+
+      setWhatsappNumber(data?.whatsapp || '')
     }
 
     getPaymentMethods()
+    getWhatsappNumber()
   }, [])
 
   const updateCartQuantity = (item, change) => {
@@ -68,29 +87,55 @@ export default function Cart({ cart, setCart }) {
   const closeCheckout = () => {
     setIsCheckoutOpen(false)
     setLocation(null)
+    setPaymentOpen(false)
     formik.resetForm()
   }
 
   const getLocation = () => {
     if (!navigator.geolocation) {
-      alert('المتصفح لا يدعم تحديد الموقع')
+      toast.error('المتصفح لا يدعم تحديد الموقع')
       return
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
+        const newLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        })
+        }
+
+        setLocation(newLocation)
+
+        formik.setFieldValue(
+          'location',
+          `${newLocation.latitude},${newLocation.longitude}`
+        )
+
+        toast.success('تم تحديد موقعك بنجاح')
       },
       () => {
-        alert('تعذر الحصول على موقعك')
+        toast.error('تعذر الحصول على موقعك، يرجى السماح بالوصول للموقع')
       }
     )
   }
 
   const confirmOrder = async (values) => {
+    const cleanWhatsappNumber = whatsappNumber.replace(/\D/g, '')
+
+    const normalizedWhatsapp = cleanWhatsappNumber.startsWith('0')
+      ? `20${cleanWhatsappNumber.slice(1)}`
+      : cleanWhatsappNumber
+
+    if (!normalizedWhatsapp) {
+      toast.error('رقم الواتساب غير متوفر')
+      return
+    }
+
+    if (!location) {
+      toast.error('يرجى تحديد موقعك أولًا')
+      return
+    }
+
     const items = cart.map((item) => ({
       name: item.name,
       price: item.price,
@@ -111,20 +156,22 @@ export default function Cart({ cart, setCart }) {
 
           payment_method: selectedPaymentMethod?.name || '',
 
+          order_note: values.order_note,
+
           total_price: cartTotal,
 
           status: 'pending',
           items: items,
-        }])
+        },
+      ])
+
     if (error) {
       console.log('Error creating order:', error)
-      alert('حدث خطأ أثناء تسجيل الطلب')
+      toast.error('حدث خطأ أثناء تسجيل الطلب')
       return
     }
 
-    const mapsUrl = location
-      ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
-      : ''
+    const mapsUrl = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
 
     const productsMessage = cart
       .map((item) => {
@@ -156,7 +203,12 @@ ${productsMessage}
 ${values.additional_phone
         ? `رقم هاتف إضافي: ${values.additional_phone}`
         : ''}
-العنوان: ${values.address}
+${values.order_note
+        ? `ملاحظات الطلب: ${values.order_note}`
+        : ''}
+${values.address
+        ? `العنوان: ${values.address}`
+        : ''}
 تاريخ التسليم: ${values.deliveryDate}
 وقت التسليم: ${values.deliveryTime}
 
@@ -164,19 +216,20 @@ ${values.additional_phone
 ${selectedPaymentMethod?.payment_number
         ? `رقم التحويل: ${selectedPaymentMethod.payment_number}`
         : ''}
-${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
+
+الموقع على الخريطة: ${mapsUrl}
 
 شكرًا لكم`
-    const whatsappNumber = '201050838177'
 
     const whatsappUrl =
-      `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+      `https://wa.me/${normalizedWhatsapp}?text=${encodeURIComponent(message)}`
 
     window.open(whatsappUrl, '_blank')
 
     setCart([])
     setIsCheckoutOpen(false)
     setLocation(null)
+    setPaymentOpen(false)
     formik.resetForm()
   }
 
@@ -186,16 +239,19 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
       phone: '',
       additional_phone: '',
       address: '',
+      location: '',
       deliveryDate: '',
       deliveryTime: '',
       paymentMethod: '',
+      order_note: '',
     },
+
     validationSchema: Yup.object({
       name: Yup.string().required('الاسم مطلوب'),
 
       phone: Yup.string().required('رقم الهاتف مطلوب'),
 
-      address: Yup.string().required('العنوان مطلوب'),
+      location: Yup.string().required('تحديد الموقع مطلوب'),
 
       deliveryDate: Yup.string().required(
         'تاريخ التسليم مطلوب'
@@ -204,6 +260,7 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
       deliveryTime: Yup.string().required(
         'وقت التسليم مطلوب'
       ),
+
       paymentMethod: Yup.string().required(
         'طريقة الدفع مطلوبة'
       ),
@@ -213,6 +270,7 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
       confirmOrder(values)
     },
   })
+
   const selectedPaymentMethod = paymentMethods.find(
     (method) =>
       method.code === formik.values.paymentMethod
@@ -381,6 +439,7 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                   >
 
                     <div>
+
                       <p className="font-medium text-[#2E1B12]">
                         {item.name}
                       </p>
@@ -391,6 +450,7 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                           ? 'قطعة'
                           : 'كجم'}
                       </p>
+
                     </div>
 
                     <p className="font-semibold text-[#5A3825]">
@@ -401,7 +461,6 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                 ))}
 
               </div>
-
 
               <div className="flex items-center justify-between mt-4">
 
@@ -414,29 +473,72 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                 </span>
 
               </div>
+
             </div>
 
             {/* Payment Method */}
             <div className="mb-6">
+
               <h3 className="font-semibold text-[#2E1B12] mb-3">
                 طريقة الدفع
               </h3>
 
-              <select
-                name="paymentMethod"
-                value={formik.values.paymentMethod}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className="w-full border border-[#D8C9BC] rounded-lg px-3 py-2 outline-none bg-white"
-              >
-                <option value="">اختر طريقة الدفع</option>
+              <div className="relative">
 
-                {paymentMethods.map((method) => (
-                  <option key={method.id} value={method.code}>
-                    {method.name}
-                  </option>
-                ))}
-              </select>
+                <button
+                  type="button"
+                  onClick={() => setPaymentOpen((prev) => !prev)}
+                  className="w-full border border-[#D8C9BC] rounded-lg px-4 py-3 bg-white flex items-center justify-between text-right outline-none"
+                >
+
+                  <span
+                    className={
+                      selectedPaymentMethod
+                        ? 'text-[#2E1B12]'
+                        : 'text-[#6B5A50]'
+                    }
+                  >
+                    {selectedPaymentMethod
+                      ? selectedPaymentMethod.name
+                      : 'اختر طريقة الدفع'}
+                  </span>
+
+                  <FiChevronDown
+                    className={`text-xl transition-transform ${
+                      paymentOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+
+                </button>
+
+                {paymentOpen && (
+                  <div className="absolute z-20 w-full mt-2 bg-white border border-[#D8C9BC] rounded-lg shadow-lg overflow-hidden">
+
+                    {paymentMethods.map((method) => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => {
+                          formik.setFieldValue(
+                            'paymentMethod',
+                            method.code
+                          )
+                          formik.setFieldTouched(
+                            'paymentMethod',
+                            true
+                          )
+                          setPaymentOpen(false)
+                        }}
+                        className="w-full text-right px-4 py-3 hover:bg-[#F8F3EA] active:bg-[#F8F3EA] transition"
+                      >
+                        {method.name}
+                      </button>
+                    ))}
+
+                  </div>
+                )}
+
+              </div>
 
               {formik.touched.paymentMethod &&
                 formik.errors.paymentMethod && (
@@ -448,14 +550,17 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
               {selectedPaymentMethod?.code === 'cash_on_delivery' ? (
 
                 <div className="mt-3 bg-[#F8F3EA] rounded-lg p-3">
+
                   <p className="text-sm text-[#6B5A50]">
                     يتم تحديد مصاريف الشحن من خلال الدلفري عند الاستلام
                   </p>
+
                 </div>
 
               ) : selectedPaymentMethod?.payment_number ? (
 
                 <div className="mt-3 bg-[#F8F3EA] rounded-lg p-3">
+
                   <p className="text-sm text-[#6B5A50]">
                     رقم التحويل
                   </p>
@@ -463,10 +568,13 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                   <p className="font-semibold text-[#2E1B12] mt-1">
                     {selectedPaymentMethod.payment_number}
                   </p>
+
                 </div>
 
               ) : null}
+
             </div>
+
             {/* Customer Form */}
             <form
               onSubmit={formik.handleSubmit}
@@ -522,8 +630,10 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                   )}
 
               </div>
+
               {/* Additional Phone */}
               <div>
+
                 <label className="block mb-1 text-sm text-[#2E1B12]">
                   رقم هاتف إضافي
                 </label>
@@ -536,6 +646,26 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                   onBlur={formik.handleBlur}
                   className="w-full border border-[#D8C9BC] rounded-lg px-3 py-2 outline-none"
                 />
+
+              </div>
+
+              {/* Order Note */}
+              <div>
+
+                <label className="block text-sm font-medium mb-2">
+                  ملاحظات على الطلب
+                </label>
+
+                <textarea
+                  name="order_note"
+                  value={formik.values.order_note}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  rows="3"
+                  placeholder="اكتب أي ملاحظة خاصة بالطلب (اختياري)"
+                  className="w-full border border-[#D8C9BC] rounded-lg px-3 py-2 outline-none resize-none"
+                />
+
               </div>
 
               {/* Address */}
@@ -551,15 +681,9 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   rows="3"
+                  placeholder="اكتب عنوانك بالتفصيل (اختياري)"
                   className="w-full border border-[#D8C9BC] rounded-lg px-3 py-2 outline-none resize-none"
                 />
-
-                {formik.touched.address &&
-                  formik.errors.address && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {formik.errors.address}
-                    </p>
-                  )}
 
               </div>
 
@@ -579,6 +703,13 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
                     ? 'تم تحديد الموقع'
                     : 'استخدم موقعي الحالي'}
                 </button>
+
+                {formik.touched.location &&
+                  formik.errors.location && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {formik.errors.location}
+                    </p>
+                  )}
 
               </div>
 
@@ -663,4 +794,3 @@ ${location ? `الموقع على الخريطة: ${mapsUrl}` : ''}
     </main>
   )
 }
-
