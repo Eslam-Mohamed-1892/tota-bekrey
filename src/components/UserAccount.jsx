@@ -74,7 +74,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
     const handleForgotPasswordSubmit = async () => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
+            redirectTo: 'https://tota-bekrey.vercel.app/reset-password',
         })
 
         if (error) {
@@ -86,343 +86,344 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
         handleClose()
     }
+}
 
-    const handleClose = () => {
-        setIsOpen(false)
-        setMode('choice')
-        setShowPassword(false)
-        setEmail('')
-        setPassword('')
-        setUsername('')
-    }
-    const handleForgotPassword = () => {
-        setMode('forgot-password')
-    }
+const handleClose = () => {
+    setIsOpen(false)
+    setMode('choice')
+    setShowPassword(false)
+    setEmail('')
+    setPassword('')
+    setUsername('')
+}
+const handleForgotPassword = () => {
+    setMode('forgot-password')
+}
 
-    const handleBackToLogin = () => {
-        setMode('login')
-    }
+const handleBackToLogin = () => {
+    setMode('login')
+}
 
-    if (!isOpen) return null
+if (!isOpen) return null
 
-    return (
-        <div className="fixed inset-0 z-100 bg-black/40 flex items-center justify-center px-4">
+return (
+    <div className="fixed inset-0 z-100 bg-black/40 flex items-center justify-center px-4">
 
-            <div className="w-full max-w-md bg-white rounded-2xl p-6 relative">
+        <div className="w-full max-w-md bg-white rounded-2xl p-6 relative">
 
-                {/* Close */}
-                <button
-                    onClick={handleClose}
-                    className="absolute top-4 left-4 text-gray-500 hover:text-[#5A3825] text-xl transition"
-                >
-                    <FiX />
-                </button>
+            {/* Close */}
+            <button
+                onClick={handleClose}
+                className="absolute top-4 left-4 text-gray-500 hover:text-[#5A3825] text-xl transition"
+            >
+                <FiX />
+            </button>
 
-                {/* Title */}
-                <div className="text-center mb-8">
+            {/* Title */}
+            <div className="text-center mb-8">
 
-                    <h2 className="text-2xl font-bold text-[#5A3825]">
+                <h2 className="text-2xl font-bold text-[#5A3825]">
 
-                        {mode === 'choice' && 'حسابك'}
+                    {mode === 'choice' && 'حسابك'}
 
-                        {mode === 'login' && 'تسجيل الدخول'}
+                    {mode === 'login' && 'تسجيل الدخول'}
 
-                        {mode === 'register' && 'إنشاء حساب'}
+                    {mode === 'register' && 'إنشاء حساب'}
 
-                        {mode === 'forgot-password' && 'إعادة تعيين كلمة المرور'}
+                    {mode === 'forgot-password' && 'إعادة تعيين كلمة المرور'}
 
-                    </h2>
+                </h2>
 
-                    {mode === 'choice' && (
-                        <p className="text-gray-500 mt-2">
-                            اختر الطريقة المناسبة للمتابعة
-                        </p>
-                    )}
-
-                    {mode === 'forgot-password' && (
-                        <p className="text-gray-500 mt-2 leading-7">
-                            أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.
-                        </p>
-                    )}
-
-                </div>
-
-                {/* Choice */}
                 {mode === 'choice' && (
-
-                    <div className="space-y-4">
-
-                        {/* Login */}
-                        <button
-                            onClick={() => setMode('login')}
-                            className="w-full flex items-center justify-center gap-3 border border-[#5A3825] text-[#5A3825] rounded-xl py-3 hover:bg-[#5A3825] hover:text-white transition"
-                        >
-                            <FiLogIn />
-
-                            <span>
-                                لديك حساب؟ تسجيل الدخول
-                            </span>
-                        </button>
-
-                        {/* Register */}
-                        <button
-                            onClick={() => setMode('register')}
-                            className="w-full flex items-center justify-center gap-3 bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
-                        >
-                            <FiUserPlus />
-
-                            <span>
-                                إنشاء حساب
-                            </span>
-                        </button>
-
-                    </div>
-
+                    <p className="text-gray-500 mt-2">
+                        اختر الطريقة المناسبة للمتابعة
+                    </p>
                 )}
 
-                {/* Login */}
-                {mode === 'login' && (
-
-                    <div className="space-y-5">
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                البريد الإلكتروني
-                            </label>
-
-                            <input
-                                type="email"
-                                placeholder="example@email.com"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                كلمة المرور
-                            </label>
-
-                            <div className="relative">
-
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
-                                    autoComplete="current-password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
-                                />
-
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5A3825]"
-                                >
-                                    {showPassword ? <FiEyeOff /> : <FiEye />}
-                                </button>
-
-                            </div>
-
-                            {/* Forgot Password */}
-                            <div className="mt-2 text-right">
-                                <button
-                                    type="button"
-                                    onClick={handleForgotPassword}
-                                    className="text-sm text-[#5A3825] hover:text-[#4a2e20] hover:underline transition"
-                                >
-                                    نسيت كلمة المرور؟
-                                </button>
-                            </div>
-
-                        </div>
-
-                        {/* Login Button */}
-                        <button
-                            onClick={handleLogin}
-                            className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
-                        >
-                            تسجيل الدخول
-                        </button>
-
-                        {/* Register */}
-                        <p className="text-center text-sm text-gray-500">
-
-                            ليس لديك حساب؟
-
-                            <button
-                                onClick={() => setMode('register')}
-                                className="text-[#5A3825] font-semibold mr-1"
-                            >
-                                إنشاء حساب
-                            </button>
-
-                        </p>
-
-                        {/* Back */}
-                        <button
-                            onClick={() => setMode('choice')}
-                            className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
-                        >
-                            العودة
-                        </button>
-
-                    </div>
-
-                )}
-
-                {/* Register */}
-                {mode === 'register' && (
-
-                    <div className="space-y-5">
-
-                        {/* Username */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                اسم المستخدم
-                            </label>
-
-                            <input
-                                type="text"
-                                placeholder="اسم المستخدم"
-                                autoComplete="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                البريد الإلكتروني
-                            </label>
-
-                            <input
-                                type="email"
-                                placeholder="example@email.com"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                كلمة المرور
-                            </label>
-
-                            <div className="relative">
-
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
-                                    autoComplete="new-password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
-                                />
-
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5A3825]"
-                                >
-                                    {showPassword ? <FiEyeOff /> : <FiEye />}
-                                </button>
-
-                            </div>
-                        </div>
-
-                        {/* Register Button */}
-                        <button
-                            onClick={handleRegister}
-                            className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
-                        >
-                            إنشاء الحساب
-                        </button>
-
-                        {/* Login */}
-                        <p className="text-center text-sm text-gray-500">
-
-                            لديك حساب بالفعل؟
-
-                            <button
-                                onClick={() => setMode('login')}
-                                className="text-[#5A3825] font-semibold mr-1"
-                            >
-                                تسجيل الدخول
-                            </button>
-
-                        </p>
-
-                        {/* Back */}
-                        <button
-                            onClick={() => setMode('choice')}
-                            className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
-                        >
-                            العودة
-                        </button>
-
-                    </div>
-
-                )}
-
-                {/* Forgot Password */}
                 {mode === 'forgot-password' && (
-
-                    <div className="space-y-5">
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm text-[#5A3825] mb-2">
-                                البريد الإلكتروني
-                            </label>
-
-                            <input
-                                type="email"
-                                placeholder="example@email.com"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />
-                        </div>
-
-                        {/* Send Reset Link */}
-                        <button
-                            type="button"
-                            onClick={handleForgotPasswordSubmit}
-                            className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
-                        >
-                            إرسال رابط إعادة التعيين
-                        </button>
-
-                        {/* Back To Login */}
-                        <button
-                            type="button"
-                            onClick={handleBackToLogin}
-                            className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-[#5A3825] transition"
-                        >
-                            <FiArrowRight />
-
-                            <span>
-                                العودة لتسجيل الدخول
-                            </span>
-                        </button>
-
-                    </div>
-
+                    <p className="text-gray-500 mt-2 leading-7">
+                        أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.
+                    </p>
                 )}
 
             </div>
 
+            {/* Choice */}
+            {mode === 'choice' && (
+
+                <div className="space-y-4">
+
+                    {/* Login */}
+                    <button
+                        onClick={() => setMode('login')}
+                        className="w-full flex items-center justify-center gap-3 border border-[#5A3825] text-[#5A3825] rounded-xl py-3 hover:bg-[#5A3825] hover:text-white transition"
+                    >
+                        <FiLogIn />
+
+                        <span>
+                            لديك حساب؟ تسجيل الدخول
+                        </span>
+                    </button>
+
+                    {/* Register */}
+                    <button
+                        onClick={() => setMode('register')}
+                        className="w-full flex items-center justify-center gap-3 bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
+                    >
+                        <FiUserPlus />
+
+                        <span>
+                            إنشاء حساب
+                        </span>
+                    </button>
+
+                </div>
+
+            )}
+
+            {/* Login */}
+            {mode === 'login' && (
+
+                <div className="space-y-5">
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            البريد الإلكتروني
+                        </label>
+
+                        <input
+                            type="email"
+                            placeholder="example@email.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            كلمة المرور
+                        </label>
+
+                        <div className="relative">
+
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5A3825]"
+                            >
+                                {showPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+
+                        </div>
+
+                        {/* Forgot Password */}
+                        <div className="mt-2 text-right">
+                            <button
+                                type="button"
+                                onClick={handleForgotPassword}
+                                className="text-sm text-[#5A3825] hover:text-[#4a2e20] hover:underline transition"
+                            >
+                                نسيت كلمة المرور؟
+                            </button>
+                        </div>
+
+                    </div>
+
+                    {/* Login Button */}
+                    <button
+                        onClick={handleLogin}
+                        className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
+                    >
+                        تسجيل الدخول
+                    </button>
+
+                    {/* Register */}
+                    <p className="text-center text-sm text-gray-500">
+
+                        ليس لديك حساب؟
+
+                        <button
+                            onClick={() => setMode('register')}
+                            className="text-[#5A3825] font-semibold mr-1"
+                        >
+                            إنشاء حساب
+                        </button>
+
+                    </p>
+
+                    {/* Back */}
+                    <button
+                        onClick={() => setMode('choice')}
+                        className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
+                    >
+                        العودة
+                    </button>
+
+                </div>
+
+            )}
+
+            {/* Register */}
+            {mode === 'register' && (
+
+                <div className="space-y-5">
+
+                    {/* Username */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            اسم المستخدم
+                        </label>
+
+                        <input
+                            type="text"
+                            placeholder="اسم المستخدم"
+                            autoComplete="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            البريد الإلكتروني
+                        </label>
+
+                        <input
+                            type="email"
+                            placeholder="example@email.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            كلمة المرور
+                        </label>
+
+                        <div className="relative">
+
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="••••••••"
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#5A3825]"
+                            >
+                                {showPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+
+                        </div>
+                    </div>
+
+                    {/* Register Button */}
+                    <button
+                        onClick={handleRegister}
+                        className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
+                    >
+                        إنشاء الحساب
+                    </button>
+
+                    {/* Login */}
+                    <p className="text-center text-sm text-gray-500">
+
+                        لديك حساب بالفعل؟
+
+                        <button
+                            onClick={() => setMode('login')}
+                            className="text-[#5A3825] font-semibold mr-1"
+                        >
+                            تسجيل الدخول
+                        </button>
+
+                    </p>
+
+                    {/* Back */}
+                    <button
+                        onClick={() => setMode('choice')}
+                        className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
+                    >
+                        العودة
+                    </button>
+
+                </div>
+
+            )}
+
+            {/* Forgot Password */}
+            {mode === 'forgot-password' && (
+
+                <div className="space-y-5">
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm text-[#5A3825] mb-2">
+                            البريد الإلكتروني
+                        </label>
+
+                        <input
+                            type="email"
+                            placeholder="example@email.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
+                        />
+                    </div>
+
+                    {/* Send Reset Link */}
+                    <button
+                        type="button"
+                        onClick={handleForgotPasswordSubmit}
+                        className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
+                    >
+                        إرسال رابط إعادة التعيين
+                    </button>
+
+                    {/* Back To Login */}
+                    <button
+                        type="button"
+                        onClick={handleBackToLogin}
+                        className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-[#5A3825] transition"
+                    >
+                        <FiArrowRight />
+
+                        <span>
+                            العودة لتسجيل الدخول
+                        </span>
+                    </button>
+
+                </div>
+
+            )}
+
         </div>
-    )
+
+    </div>
+)
 }
