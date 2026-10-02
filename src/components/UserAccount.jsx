@@ -1,10 +1,19 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
-import { FiX, FiLogIn, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi'
+import {
+    FiX,
+    FiLogIn,
+    FiUserPlus,
+    FiEye,
+    FiEyeOff,
+    FiArrowRight,
+} from 'react-icons/fi'
+
 export default function UserAccount({ isOpen, setIsOpen }) {
 
     const [mode, setMode] = useState('choice')
     const [showPassword, setShowPassword] = useState(false)
+
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [username, setUsername] = useState('')
@@ -21,6 +30,9 @@ export default function UserAccount({ isOpen, setIsOpen }) {
         }
 
         console.log('Logged in user:', data.user)
+
+        // إغلاق المودال بعد تسجيل الدخول فقط
+        handleClose()
     }
     const handleRegister = async () => {
         console.log('REGISTER:', {
@@ -50,11 +62,47 @@ export default function UserAccount({ isOpen, setIsOpen }) {
             alert(
                 'تم إنشاء الحساب بنجاح. يرجى تأكيد بريدك الإلكتروني من الرسالة المرسلة إليك، ثم تسجيل الدخول.'
             )
+
+            handleClose()
             return
         }
 
         console.log('Registration and login successful')
+
+        handleClose()
     }
+
+    const handleForgotPasswordSubmit = async () => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        })
+
+        if (error) {
+            console.log('Reset password error:', error.message)
+            return
+        }
+
+        alert('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.')
+
+        handleClose()
+    }
+
+    const handleClose = () => {
+        setIsOpen(false)
+        setMode('choice')
+        setShowPassword(false)
+        setEmail('')
+        setPassword('')
+        setUsername('')
+    }
+    const handleForgotPassword = () => {
+        setMode('forgot-password')
+    }
+
+    const handleBackToLogin = () => {
+        setMode('login')
+    }
+
     if (!isOpen) return null
 
     return (
@@ -64,14 +112,12 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
                 {/* Close */}
                 <button
-                    onClick={() => {
-                        setIsOpen(false)
-                        setMode('choice')
-                    }}
-                    className="absolute top-4 left-4 text-gray-500 hover:text-[#5A3825] text-xl"
+                    onClick={handleClose}
+                    className="absolute top-4 left-4 text-gray-500 hover:text-[#5A3825] text-xl transition"
                 >
                     <FiX />
                 </button>
+
                 {/* Title */}
                 <div className="text-center mb-8">
 
@@ -83,6 +129,8 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
                         {mode === 'register' && 'إنشاء حساب'}
 
+                        {mode === 'forgot-password' && 'إعادة تعيين كلمة المرور'}
+
                     </h2>
 
                     {mode === 'choice' && (
@@ -91,7 +139,14 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                         </p>
                     )}
 
+                    {mode === 'forgot-password' && (
+                        <p className="text-gray-500 mt-2 leading-7">
+                            أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.
+                        </p>
+                    )}
+
                 </div>
+
                 {/* Choice */}
                 {mode === 'choice' && (
 
@@ -124,6 +179,8 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                     </div>
 
                 )}
+
+                {/* Login */}
                 {mode === 'login' && (
 
                     <div className="space-y-5">
@@ -160,6 +217,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
                                 />
+
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
@@ -169,6 +227,18 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                 </button>
 
                             </div>
+
+                            {/* Forgot Password */}
+                            <div className="mt-2 text-right">
+                                <button
+                                    type="button"
+                                    onClick={handleForgotPassword}
+                                    className="text-sm text-[#5A3825] hover:text-[#4a2e20] hover:underline transition"
+                                >
+                                    نسيت كلمة المرور؟
+                                </button>
+                            </div>
+
                         </div>
 
                         {/* Login Button */}
@@ -178,6 +248,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                         >
                             تسجيل الدخول
                         </button>
+
                         {/* Register */}
                         <p className="text-center text-sm text-gray-500">
 
@@ -195,7 +266,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                         {/* Back */}
                         <button
                             onClick={() => setMode('choice')}
-                            className="w-full text-sm text-gray-500 hover:text-[#5A3825]"
+                            className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
                         >
                             العودة
                         </button>
@@ -204,6 +275,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
                 )}
 
+                {/* Register */}
                 {mode === 'register' && (
 
                     <div className="space-y-5">
@@ -221,7 +293,8 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />                        </div>
+                            />
+                        </div>
 
                         {/* Email */}
                         <div>
@@ -236,7 +309,8 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
-                            />                        </div>
+                            />
+                        </div>
 
                         {/* Password */}
                         <div>
@@ -254,6 +328,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-12 outline-none focus:border-[#5A3825]"
                                 />
+
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
@@ -262,7 +337,8 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                                     {showPassword ? <FiEyeOff /> : <FiEye />}
                                 </button>
 
-                            </div>                        </div>
+                            </div>
+                        </div>
 
                         {/* Register Button */}
                         <button
@@ -271,6 +347,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                         >
                             إنشاء الحساب
                         </button>
+
                         {/* Login */}
                         <p className="text-center text-sm text-gray-500">
 
@@ -288,9 +365,56 @@ export default function UserAccount({ isOpen, setIsOpen }) {
                         {/* Back */}
                         <button
                             onClick={() => setMode('choice')}
-                            className="w-full text-sm text-gray-500 hover:text-[#5A3825]"
+                            className="w-full text-sm text-gray-500 hover:text-[#5A3825] transition"
                         >
                             العودة
+                        </button>
+
+                    </div>
+
+                )}
+
+                {/* Forgot Password */}
+                {mode === 'forgot-password' && (
+
+                    <div className="space-y-5">
+
+                        {/* Email */}
+                        <div>
+                            <label className="block text-sm text-[#5A3825] mb-2">
+                                البريد الإلكتروني
+                            </label>
+
+                            <input
+                                type="email"
+                                placeholder="example@email.com"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-[#5A3825]"
+                            />
+                        </div>
+
+                        {/* Send Reset Link */}
+                        <button
+                            type="button"
+                            onClick={handleForgotPasswordSubmit}
+                            className="w-full bg-[#5A3825] text-white rounded-xl py-3 hover:bg-[#4a2e20] transition"
+                        >
+                            إرسال رابط إعادة التعيين
+                        </button>
+
+                        {/* Back To Login */}
+                        <button
+                            type="button"
+                            onClick={handleBackToLogin}
+                            className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-[#5A3825] transition"
+                        >
+                            <FiArrowRight />
+
+                            <span>
+                                العودة لتسجيل الدخول
+                            </span>
                         </button>
 
                     </div>

@@ -15,6 +15,7 @@ import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
 import Dashboard from './pages/Dashboard'
 import Cart from './pages/Cart'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
 	const location = useLocation()
@@ -155,6 +156,10 @@ export default function App() {
 			/>
 
 			<Routes>
+				<Route
+					path="/reset-password"
+					element={<ResetPassword />}
+				/>
 				<Route
 					path="/"
 					element={<Home products={products} />}
