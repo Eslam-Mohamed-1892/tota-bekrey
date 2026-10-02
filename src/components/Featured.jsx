@@ -10,7 +10,7 @@ export default function Featured({ products }) {
         <div className="text-center mb-10 md:mb-12">
 
           <p className="text-[#5A3825] font-medium mb-3">
-            اختيارات توتة
+            اختيارات توتا
           </p>
 
           <h2 className="text-3xl md:text-4xl font-bold text-[#2E1B12]">

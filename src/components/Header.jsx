@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiMenu, FiX, FiShoppingCart } from 'react-icons/fi'
+import { FiMenu, FiX, FiShoppingCart, FiUser } from 'react-icons/fi'
 
-export default function Header({ cart }) {
+export default function Header({
+  cart,
+  user,
+  setIsUserAccountOpen,
+}) {
   const [isOpen, setIsOpen] = useState(false)
 
   const closeMenu = () => {
@@ -10,6 +14,7 @@ export default function Header({ cart }) {
   }
 
   const cartCount = cart.length
+  console.log('User:', user)
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-[#5A3825] text-white">
@@ -37,7 +42,7 @@ export default function Header({ cart }) {
           </Link>
 
           <Link to="/contact" onClick={closeMenu}>
-            مكانّا
+            العنوان و التواصل
           </Link>
 
           {/* Cart */}
@@ -56,6 +61,27 @@ export default function Header({ cart }) {
             )}
           </Link>
 
+          {/* Login */}
+          {user ? (
+            <Link
+              to="/account"
+              onClick={closeMenu}
+              className="flex items-center gap-2 bg-white rounded-xl p-3 text-[#5A3825]"
+            >
+              <FiUser />
+              <span>{user.username}</span>
+            </Link>
+          ) : (<button
+            onClick={() => {
+              closeMenu()
+              setIsUserAccountOpen(true)
+            }}
+            className="flex items-center gap-2 bg-white rounded-xl p-3 text-[#5A3825]"
+          >
+            <FiUser />
+            <span>تسجيل الدخول</span>
+          </button>
+          )}
         </nav>
 
         {/* Mobile Actions */}
@@ -114,8 +140,29 @@ export default function Header({ cart }) {
               to="/contact"
               onClick={closeMenu}
             >
-              مكانّا
+              العنوان و التواصل
             </Link>
+            {user ? (
+              <Link
+                to="/account"
+                onClick={closeMenu}
+                className="flex items-center justify-center gap-2"
+              >
+                <span>حسابي</span>
+                <FiUser />
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  closeMenu()
+                  setIsUserAccountOpen(true)
+                }}
+                className="flex items-center justify-center gap-2"
+              >
+                <FiUser />
+                <span>تسجيل الدخول</span>
+              </button>
+            )}
 
           </div>
 

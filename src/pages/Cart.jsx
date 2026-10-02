@@ -231,6 +231,8 @@ ${selectedPaymentMethod?.payment_number
     setLocation(null)
     setPaymentOpen(false)
     formik.resetForm()
+
+    return true
   }
 
   const formik = useFormik({
@@ -251,7 +253,7 @@ ${selectedPaymentMethod?.payment_number
 
       phone: Yup.string().required('رقم الهاتف مطلوب'),
 
-      location: Yup.string().required('تحديد الموقع مطلوب'),
+      address: Yup.string().required('تحديد العنوان مطلوب'),
 
       deliveryDate: Yup.string().required(
         'تاريخ التسليم مطلوب'
@@ -524,15 +526,18 @@ ${selectedPaymentMethod?.payment_number
                         onClick={() => {
                           formik.setFieldValue(
                             'paymentMethod',
-                            method.code
-                          )
-                          formik.setFieldTouched(
-                            'paymentMethod',
+                            method.code,
                             true
                           )
+
+                          formik.setFieldTouched(
+                            'paymentMethod',
+                            true,
+                            false
+                          )
+
                           setPaymentOpen(false)
-                        }}
-                        className="w-full text-right px-4 py-3 hover:bg-[#F8F3EA] active:bg-[#F8F3EA] transition"
+                        }} className="w-full text-right px-4 py-3 hover:bg-[#F8F3EA] active:bg-[#F8F3EA] transition"
                       >
                         {method.name}
                       </button>
@@ -688,7 +693,14 @@ ${selectedPaymentMethod?.payment_number
                   className="w-full border border-[#D8C9BC] rounded-lg px-3 py-2 outline-none resize-none"
                 />
 
+                {formik.touched.address &&
+                  formik.errors.address && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {formik.errors.address}
+                    </p>
+                  )}
               </div>
+
 
               {/* Location */}
               <div>
@@ -706,13 +718,6 @@ ${selectedPaymentMethod?.payment_number
                     ? 'تم تحديد الموقع'
                     : 'استخدم موقعي الحالي'}
                 </button>
-
-                {formik.touched.location &&
-                  formik.errors.location && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {formik.errors.location}
-                    </p>
-                  )}
 
               </div>
 
