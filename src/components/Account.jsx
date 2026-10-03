@@ -17,6 +17,8 @@ export default function Account() {
     const [loading, setLoading] = useState(true)
     const [showPasswordReset, setShowPasswordReset] = useState(false)
     const navigate = useNavigate()
+    const [orders, setOrders] = useState([])
+    const [ordersLoading, setOrdersLoading] = useState(false)
 
     useEffect(() => {
 
@@ -59,6 +61,19 @@ export default function Account() {
 
             setUsername(profile?.username || authUser.user_metadata?.username || '')
 
+            const { data: ordersData, error: ordersError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('user_id', authUser.id)
+                .order('created_at', { ascending: false })
+
+            if (ordersError) {
+                console.log('Account orders error:', ordersError.message)
+                setOrders([])
+            } else {
+                setOrders(ordersData || [])
+            }
+
             setLoading(false)
         }
 
@@ -76,7 +91,7 @@ export default function Account() {
 
         navigate('/')
     }
-    
+
     if (loading) {
         return (
             <main className="min-h-screen bg-[#F8F3EA] pt-28 pb-12">
@@ -236,16 +251,96 @@ export default function Account() {
                         طلباتي السابقة
                     </h2>
 
-                    <div className="text-center py-8">
+                    {orders.length === 0 ? (
 
-                        <p className="text-gray-500">
-                            لا توجد طلبات حتى الآن
-                        </p>
+                        <div className="text-center py-8">
 
-                    </div>
+                            <p className="text-gray-500">
+                                لا توجد طلبات حتى الآن
+                            </p>
+
+                        </div>
+
+                    ) : (
+
+                        <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
+
+                            {orders.map((order) => (
+
+                                <div
+                                    key={order.id}
+                                    className="border border-[#D8C9BC] rounded-xl p-4"
+                                >
+
+                                    <div className="flex items-center justify-between gap-4">
+
+                                        <div>
+
+                                            <p className="text-sm text-gray-500">
+                                                رقم الطلب
+                                            </p>
+
+                                            <p className="font-semibold text-[#5A3825]">
+                                                #{order.id}
+                                            </p>
+
+                                        </div>
+
+                                        <div className="text-left">
+
+                                            <p className="text-sm text-gray-500">
+                                                الإجمالي
+                                            </p>
+
+                                            <p className="font-semibold text-[#5A3825]">
+                                                {order.total_price} جنيه
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div className="border-t border-[#D8C9BC] mt-4 pt-4">
+
+                                        <div className="flex items-center justify-between gap-4 text-sm">
+
+                                            <div>
+
+                                                <p className="text-gray-500">
+                                                    تاريخ الطلب
+                                                </p>
+
+                                                <p className="text-[#5A3825] mt-1">
+                                                    {new Date(order.created_at).toLocaleDateString('ar-EG')}
+                                                </p>
+
+                                            </div>
+
+                                            <div>
+
+                                                <p className="text-gray-500">
+                                                    الحالة
+                                                </p>
+
+                                                <p className="text-[#5A3825] mt-1">
+                                                    {order.status}
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    )}
 
                 </div>
-
                 {/* Logout */}
                 <div className="mt-8">
 

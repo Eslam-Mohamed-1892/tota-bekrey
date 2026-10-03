@@ -86,7 +86,7 @@ export default function UserAccount({ isOpen, setIsOpen }) {
 
         handleClose()
     }
-}
+
 
 const handleClose = () => {
     setIsOpen(false)

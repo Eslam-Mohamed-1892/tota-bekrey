@@ -121,6 +121,9 @@ export default function Cart({ cart, setCart }) {
 
   const confirmOrder = async (values) => {
     const cleanWhatsappNumber = whatsappNumber.replace(/\D/g, '')
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     const normalizedWhatsapp = cleanWhatsappNumber.startsWith('0')
       ? `20${cleanWhatsappNumber.slice(1)}`
@@ -128,11 +131,6 @@ export default function Cart({ cart, setCart }) {
 
     if (!normalizedWhatsapp) {
       toast.error('رقم الواتساب غير متوفر')
-      return
-    }
-
-    if (!location) {
-      toast.error('يرجى تحديد موقعك أولًا')
       return
     }
 
@@ -147,6 +145,8 @@ export default function Cart({ cart, setCart }) {
       .from('orders')
       .insert([
         {
+          user_id: user?.id || null,
+
           customer_name: values.name,
           phone: values.phone,
           additional_phone: values.additional_phone,
@@ -171,8 +171,9 @@ export default function Cart({ cart, setCart }) {
       return
     }
 
-    const mapsUrl = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
-
+    const mapsUrl = location
+      ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+      : ''
     const productsMessage = cart
       .map((item) => {
         const unit =
@@ -217,8 +218,9 @@ ${selectedPaymentMethod?.payment_number
         ? `رقم التحويل: ${selectedPaymentMethod.payment_number}`
         : ''}
 
-الموقع على الخريطة: ${mapsUrl}
-
+${mapsUrl
+        ? `الموقع على الخريطة: ${mapsUrl}`
+        : ''}
 شكرًا لكم`
 
     const whatsappUrl =
