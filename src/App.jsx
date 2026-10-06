@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
-import { supabase } from './supabase'
+import { supabase, adminSupabase } from './supabase'
 import { Toaster } from 'react-hot-toast'
 
 import Header from './components/Header'
@@ -26,6 +26,7 @@ export default function App() {
 
 	const [products, setProducts] = useState([])
 	const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+	const [authLoading, setAuthLoading] = useState(true)
 
 	const [settings, setSettings] = useState({
 		whatsapp: '',
@@ -46,7 +47,12 @@ export default function App() {
 	console.log("Cart:", cart)
 
 	useEffect(() => {
-		const loadUser = async (authUser) => {
+
+		// =========================
+		// Customer Session
+		// =========================
+		const loadCustomer = async (authUser) => {
+
 			if (!authUser) {
 				setUser(null)
 				return
@@ -60,11 +66,13 @@ export default function App() {
 
 			if (error) {
 				console.log('Profile error:', error)
+
 				setUser({
 					id: authUser.id,
 					email: authUser.email,
-					username: null,
+					username: authUser.user_metadata?.username || '',
 				})
+
 				return
 			}
 
@@ -75,28 +83,117 @@ export default function App() {
 			})
 		}
 
-		const checkSession = async () => {
-			const { data, error } = await supabase.auth.getSession()
+
+		// =========================
+		// Admin Session
+		// =========================
+		const checkAdminSession = async () => {
+
+			const { data, error } = await adminSupabase.auth.getSession()
 
 			if (error) {
-				console.log('Session error:', error)
+				console.log('Admin session error:', error)
+				setIsAdminLoggedIn(false)
 				return
 			}
 
-			await loadUser(data.session?.user || null)
+			if (!data.session?.user) {
+				setIsAdminLoggedIn(false)
+				return
+			}
+
+			const { data: profile, error: profileError } = await adminSupabase
+				.from('profiles')
+				.select('role')
+				.eq('id', data.session.user.id)
+				.single()
+
+			if (profileError) {
+				console.log('Admin profile error:', profileError)
+				setIsAdminLoggedIn(false)
+				return
+			}
+
+			setIsAdminLoggedIn(profile?.role === 'admin')
 		}
 
-		checkSession()
 
+		// =========================
+		// Initial Sessions
+		// =========================
+		const checkSessions = async () => {
+
+			const [
+				{ data: customerSession, error: customerError },
+				{ data: adminSession, error: adminError },
+			] = await Promise.all([
+				supabase.auth.getSession(),
+				adminSupabase.auth.getSession(),
+			])
+
+			if (customerError) {
+				console.log('Customer session error:', customerError)
+			}
+
+			if (adminError) {
+				console.log('Admin session error:', adminError)
+			}
+
+			await Promise.all([
+				loadCustomer(customerSession?.session?.user || null),
+				checkAdminSession(),
+			])
+
+			setAuthLoading(false)
+		}
+
+
+		checkSessions()
+
+
+		// =========================
+		// Customer Auth Listener
+		// =========================
 		const {
-			data: { subscription },
+			data: { subscription: customerSubscription },
 		} = supabase.auth.onAuthStateChange(async (_event, session) => {
-			await loadUser(session?.user || null)
+			await loadCustomer(session?.user || null)
 		})
 
+
+		// =========================
+		// Admin Auth Listener
+		// =========================
+		const {
+			data: { subscription: adminSubscription },
+		} = adminSupabase.auth.onAuthStateChange(async (_event, session) => {
+
+			if (!session?.user) {
+				setIsAdminLoggedIn(false)
+				return
+			}
+
+			const { data: profile, error } = await adminSupabase
+				.from('profiles')
+				.select('role')
+				.eq('id', session.user.id)
+				.single()
+
+			if (error) {
+				console.log('Admin profile error:', error)
+				setIsAdminLoggedIn(false)
+				return
+			}
+
+			setIsAdminLoggedIn(profile?.role === 'admin')
+		})
+
+
 		return () => {
-			subscription.unsubscribe()
+			customerSubscription.unsubscribe()
+			adminSubscription.unsubscribe()
 		}
+
 	}, [])
 	useEffect(() => {
 		const getProducts = async () => {
@@ -140,6 +237,9 @@ export default function App() {
 		getSettings()
 	}, [])
 	const [isUserAccountOpen, setIsUserAccountOpen] = useState(false)
+	if (authLoading) {
+		return null
+	}
 
 	return (
 		<>

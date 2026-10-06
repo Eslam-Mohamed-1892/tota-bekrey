@@ -36,6 +36,7 @@ export default function AdminSales() {
     const [expenseDate, setExpenseDate] = useState(
         new Date().toISOString().split('T')[0]
     )
+    const [selectedStatus, setSelectedStatus] = useState("all")
 
     useEffect(() => {
         getOrders()
@@ -243,12 +244,16 @@ export default function AdminSales() {
             orderDate.getMonth() + 1
         ).padStart(2, '0')}`
 
-        return orderMonth === selectedMonth
+        const matchesMonth = orderMonth === selectedMonth
+
+        const matchesStatus =
+            selectedStatus === 'all' ||
+            order.status === selectedStatus
+
+        return matchesMonth && matchesStatus
     })
 
-    const reportOrders = filteredOrders.filter(
-        (order) => order.status !== 'cancelled'
-    )
+    const reportOrders = filteredOrders
 
     const totalSales = filteredOrders
         .filter((order) => isSale(order.status))
@@ -377,46 +382,73 @@ export default function AdminSales() {
             </div>
 
 
-            {/* Month Filter */}
+            {/* Filters */}
             <div className="bg-white border border-[#E8DED2] rounded-2xl p-5 mb-6 overflow-hidden">
-
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-
                         <h3 className="font-bold text-lg">
-                            الفترة
+                            الفلاتر
                         </h3>
 
                         <p className="text-sm text-[#6B5A50] mt-1">
-                            اختر الشهر الذي تريد عرض بياناته
+                            اختر الشهر وحالة الطلبات التي تريد عرضها
                         </p>
-
                     </div>
 
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) =>
-                            setSelectedMonth(e.target.value)
-                        }
-                        className="border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
-                    >
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        {/* Month */}
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) =>
+                                setSelectedMonth(e.target.value)
+                            }
+                            className="border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
+                        >
+                            {months.map((month) => (
+                                <option
+                                    key={month.value}
+                                    value={month.value}
+                                >
+                                    {month.label}
+                                </option>
+                            ))}
+                        </select>
 
-                        {months.map((month) => (
-                            <option
-                                key={month.value}
-                                value={month.value}
-                            >
-                                {month.label}
+                        {/* Status */}
+                        <select
+                            value={selectedStatus}
+                            onChange={(e) =>
+                                setSelectedStatus(e.target.value)
+                            }
+                            className="border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
+                        >
+                            <option value="all">
+                                كل الحالات
                             </option>
-                        ))}
 
-                    </select>
+                            <option value="pending">
+                                قيد الانتظار
+                            </option>
 
+                            <option value="confirmed">
+                                تم التأكيد
+                            </option>
+
+                            <option value="preparing">
+                                جاري التجهيز
+                            </option>
+
+                            <option value="delivered">
+                                تم التسليم
+                            </option>
+
+                            <option value="cancelled">
+                                ملغي
+                            </option>
+                        </select>
+                    </div>
                 </div>
-
             </div>
-
 
             {/* Main Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

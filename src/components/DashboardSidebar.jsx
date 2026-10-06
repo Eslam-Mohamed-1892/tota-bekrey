@@ -5,6 +5,8 @@ export default function DashboardSidebar({
     isMenuOpen,
     setIsMenuOpen,
     onLogout,
+    adminName,
+    unreadMessagesCount,
 }) {
     return (
         <>
@@ -20,6 +22,15 @@ export default function DashboardSidebar({
                     <p className="text-sm text-[#6B5A50] mt-1">
                         لوحة الإدارة
                     </p>
+                    <div className="mt-4 px-3 py-3 rounded-xl bg-[#F8F3EA]">
+                        <p className="text-xs text-[#6B5A50]">
+                            الحساب
+                        </p>
+
+                        <p className="text-sm font-semibold text-[#5A3825] mt-1 truncate">
+                            {adminName || "الأدمن"}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Navigation */}
@@ -28,15 +39,19 @@ export default function DashboardSidebar({
                         <button
                             key={section.id}
                             onClick={() => handleSectionChange(section.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-right transition ${
-                                activeSection === section.id
-                                    ? "bg-[#F8F3EA] text-[#5A3825] font-semibold"
-                                    : "text-[#6B5A50] hover:bg-[#F8F3EA]"
-                            }`}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-right transition ${activeSection === section.id
+                                ? "bg-[#F8F3EA] text-[#5A3825] font-semibold"
+                                : "text-[#6B5A50] hover:bg-[#F8F3EA]"
+                                }`}
                         >
                             <span>{section.icon}</span>
                             <span>{section.label}</span>
-                        </button>
+
+                            {section.id === "messages" && unreadMessagesCount > 0 && (
+                                <span className="mr-auto min-w-6 h-6 px-2 rounded-full bg-[#5A3825] text-white text-xs font-semibold flex items-center justify-center">
+                                    {unreadMessagesCount}
+                                </span>
+                            )}                        </button>
                     ))}
                 </nav>
 
@@ -62,11 +77,10 @@ export default function DashboardSidebar({
 
             {/* Mobile Sidebar */}
             <aside
-                className={`fixed top-0 right-0 bottom-0 w-72 max-w-[85%] bg-white z-50 shadow-xl transform transition-transform duration-300 md:hidden ${
-                    isMenuOpen
-                        ? "translate-x-0"
-                        : "translate-x-full"
-                }`}
+                className={`fixed top-0 right-0 bottom-0 w-72 max-w-[85%] bg-white z-50 shadow-xl transform transition-transform duration-300 md:hidden ${isMenuOpen
+                    ? "translate-x-0"
+                    : "translate-x-full"
+                    }`}
             >
                 {/* Mobile Sidebar Header */}
                 <div className="p-6 border-b border-[#E8DED2] flex items-center justify-between">
@@ -97,14 +111,19 @@ export default function DashboardSidebar({
                         <button
                             key={section.id}
                             onClick={() => handleSectionChange(section.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-right transition ${
-                                activeSection === section.id
-                                    ? "bg-[#F8F3EA] text-[#5A3825] font-semibold"
-                                    : "text-[#6B5A50] hover:bg-[#F8F3EA]"
-                            }`}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-right transition ${activeSection === section.id
+                                ? "bg-[#F8F3EA] text-[#5A3825] font-semibold"
+                                : "text-[#6B5A50] hover:bg-[#F8F3EA]"
+                                }`}
                         >
                             <span>{section.icon}</span>
                             <span>{section.label}</span>
+
+                            {section.id === "messages" && unreadMessagesCount > 0 && (
+                                <span className="mr-auto min-w-6 h-6 px-2 rounded-full bg-[#5A3825] text-white text-xs font-semibold flex items-center justify-center">
+                                    {unreadMessagesCount}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </nav>
