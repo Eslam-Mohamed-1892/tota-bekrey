@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import {
     FiUser,
@@ -7,6 +7,7 @@ import {
     FiLogOut,
     FiChevronLeft,
     FiX,
+    FiTrash2,
 } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 
@@ -35,6 +36,13 @@ export default function Account() {
     const [showCancellationModal, setShowCancellationModal] = useState(false)
     const [cancellationOrder, setCancellationOrder] = useState(null)
     const [ordersLoading, setOrdersLoading] = useState(false)
+    const [activeMessageId, setActiveMessageId] = useState(null)
+    const [openMessageOptionsId, setOpenMessageOptionsId] = useState(null)
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedMessageIds, setSelectedMessageIds] = useState([])
+    const [messageMenuSide, setMessageMenuSide] = useState('right')
+    const messageOptionsRef = useRef(null)
+    const messageListRef = useRef(null)
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -97,6 +105,7 @@ export default function Account() {
             } else {
                 setOrders(ordersData || [])
             }
+
             const { data: settingsData, error: settingsError } = await supabase
                 .from('settings')
                 .select('cancellation_minutes')
@@ -115,8 +124,11 @@ export default function Account() {
         loadAccount()
 
     }, [])
+
     useEffect(() => {
+
         const loadMessages = async () => {
+
             if (!selectedOrder || !user) {
                 setMessages([])
                 return
@@ -138,13 +150,68 @@ export default function Account() {
             }
 
             const loadedMessages = data || []
-            const undeliveredAdminMessages = loadedMessages.filter(
+
+            // الرسائل التي أخفاها المستخدم عنده فقط
+            const {
+                data: hiddenMessages,
+                error: hiddenError,
+            } = await supabase
+                .from('message_deletions')
+                .select('message_id')
+                .eq('user_id', user.id)
+
+            if (hiddenError) {
+                console.log(
+                    'Message deletions query error:',
+                    hiddenError
+                )
+            }
+
+            const hiddenMessageIds = new Set(
+                (hiddenMessages || []).map(
+                    (item) => item.message_id
+                )
+            )
+
+            // إخفاء:
+            // 1. الرسائل المحذوفة للجميع
+            // 2. الرسائل المحذوفة لي فقط عند هذا المستخدم
+
+
+            const { data: deletedMessages, error: deletedMessagesError } =
+                await supabase
+                    .from('message_deletions')
+                    .select('message_id')
+                    .eq('user_id', user.id)
+
+            if (deletedMessagesError) {
+                console.error(
+                    'Load deleted messages error:',
+                    deletedMessagesError
+                )
+            }
+
+            const deletedMessageIds = new Set(
+                (deletedMessages || []).map(
+                    (item) => item.message_id
+                )
+            )
+
+            const visibleMessages = data.filter(
+                (message) =>
+                    !deletedMessageIds.has(message.id)
+            )
+
+
+
+            const undeliveredAdminMessages = visibleMessages.filter(
                 (message) =>
                     message.sender_type === 'admin' &&
                     !message.delivered_at
             )
 
             if (undeliveredAdminMessages.length > 0) {
+
                 const deliveredIds = undeliveredAdminMessages.map(
                     (message) => message.id
                 )
@@ -166,24 +233,27 @@ export default function Account() {
                 }
             }
 
-            setMessages(loadedMessages)
+            setMessages(visibleMessages)
 
             // تعليم رسائل الأدمن كمقروءة
-            const unreadAdminMessages = loadedMessages.filter(
+            const unreadAdminMessages = visibleMessages.filter(
                 (message) =>
                     message.sender_type === 'admin' &&
                     !message.read_at
             )
 
             if (unreadAdminMessages.length > 0) {
+
                 const unreadIds = unreadAdminMessages.map(
                     (message) => message.id
                 )
 
+                const readAt = new Date().toISOString()
+
                 const { error: readError } = await supabase
                     .from('messages')
                     .update({
-                        read_at: new Date().toISOString(),
+                        read_at: readAt,
                     })
                     .in('id', unreadIds)
 
@@ -198,8 +268,7 @@ export default function Account() {
                             unreadIds.includes(message.id)
                                 ? {
                                     ...message,
-                                    read_at:
-                                        new Date().toISOString(),
+                                    read_at: readAt,
                                 }
                                 : message
                         )
@@ -211,7 +280,9 @@ export default function Account() {
         }
 
         loadMessages()
+
     }, [selectedOrder, user])
+
     const sendMessage = async () => {
 
         if (!messageText.trim() || !selectedOrder || !user || sendingMessage) {
@@ -242,7 +313,117 @@ export default function Account() {
         setSendingMessage(false)
     }
 
+    const deleteMessageForMe = async (messageId) => {
+
+        if (!user || !messageId) {
+            return
+        }
+
+        const { error } = await supabase
+            .from('message_deletions')
+            .insert({
+                message_id: messageId,
+                user_id: user.id,
+            })
+
+        if (error) {
+            console.log('Delete message for me error:', error)
+            return
+        }
+
+        // نخفي الرسالة فورًا من الواجهة
+        setMessages((prev) =>
+            prev.filter((message) => message.id !== messageId)
+        )
+    }
+
+    const startMessageSelection = (messageId) => {
+        setSelectionMode(true)
+        setSelectedMessageIds([messageId])
+        setActiveMessageId(null)
+        setOpenMessageOptionsId(null)
+    }
+
+
+    const toggleMessageSelection = (messageId) => {
+        setSelectedMessageIds((prev) => {
+            if (prev.includes(messageId)) {
+                const next = prev.filter(
+                    (id) => id !== messageId
+                )
+
+                if (next.length === 0) {
+                    setSelectionMode(false)
+                }
+
+                return next
+            }
+
+            return [...prev, messageId]
+        })
+    }
+
+    const deleteMessageForEveryone = async (messageId) => {
+        try {
+            const { error } = await supabase.rpc(
+                'delete_message_for_everyone',
+                {
+                    p_message_id: messageId,
+                }
+            )
+
+            if (error) {
+                console.error(error)
+                return
+            }
+
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.id === messageId
+                        ? {
+                            ...msg,
+                            is_deleted: true,
+                        }
+                        : msg
+                )
+            )
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const calculateMessageMenuSide = () => {
+        const container = messageListRef.current
+        const wrapper = messageOptionsRef.current
+
+        if (!container || !wrapper) return
+
+        const containerRect = container.getBoundingClientRect()
+        const wrapperRect = wrapper.getBoundingClientRect()
+
+        const menuWidth = 150
+
+        const spaceRight =
+            containerRect.right - wrapperRect.left
+
+        const spaceLeft =
+            wrapperRect.right - containerRect.left
+
+        if (spaceRight >= menuWidth) {
+            setMessageMenuSide('left')
+        } else if (spaceLeft >= menuWidth) {
+            setMessageMenuSide('right')
+        } else {
+            setMessageMenuSide(
+                spaceRight >= spaceLeft
+                    ? 'left'
+                    : 'right'
+            )
+        }
+    }
+
     const handleLogout = async () => {
+
         const { error } = await supabase.auth.signOut()
 
         if (error) {
@@ -252,6 +433,26 @@ export default function Account() {
 
         navigate('/')
     }
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                messageOptionsRef.current &&
+                !messageOptionsRef.current.contains(event.target)
+            ) {
+                setOpenMessageOptionsId(null)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+
+        return () => {
+            document.removeEventListener(
+                'mousedown',
+                handleClickOutside
+            )
+        }
+    }, [])
+
 
     if (loading) {
         return (
@@ -296,7 +497,6 @@ export default function Account() {
             </main>
         )
     }
-
     return (
         <main className="min-h-screen bg-[#F8F3EA] pt-28 pb-12">
 
@@ -525,7 +725,6 @@ export default function Account() {
 
                                         </div>
 
-
                                         {/* Cancellation */}
                                         {canCancel && (
 
@@ -560,24 +759,21 @@ export default function Account() {
                                                             className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition"
                                                         >
                                                             إلغاء الطلب
-                                                        </button>)}
+                                                        </button>
+                                                    )}
 
                                                 </div>
 
                                             </div>
-
                                         )}
 
                                     </div>
-
                                 )
-
                             })}
                         </div>
-
                     )}
-
                 </div>
+
                 {selectedOrder && (
 
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -605,7 +801,6 @@ export default function Account() {
 
                             </div>
 
-
                             {/* Scrollable Content */}
                             <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
 
@@ -624,7 +819,6 @@ export default function Account() {
 
                                     </div>
 
-
                                     {/* الإجمالي */}
                                     <div>
 
@@ -638,7 +832,6 @@ export default function Account() {
 
                                     </div>
 
-
                                     {/* تاريخ الطلب */}
                                     <div>
 
@@ -651,7 +844,6 @@ export default function Account() {
                                         </p>
 
                                     </div>
-
 
                                     {/* المنتجات */}
                                     <div className="border-t border-[#D8C9BC] pt-4">
@@ -696,7 +888,6 @@ export default function Account() {
 
                                     </div>
 
-
                                     {/* باقي تفاصيل الطلب */}
                                     <div className="border-t border-[#D8C9BC] pt-4 space-y-4">
 
@@ -713,7 +904,6 @@ export default function Account() {
 
                                         </div>
 
-
                                         {/* طريقة الدفع */}
                                         <div>
 
@@ -726,7 +916,6 @@ export default function Account() {
                                             </p>
 
                                         </div>
-
 
                                         {/* العنوان */}
                                         <div>
@@ -741,7 +930,6 @@ export default function Account() {
 
                                         </div>
 
-
                                         {/* رقم الهاتف */}
                                         <div>
 
@@ -754,7 +942,6 @@ export default function Account() {
                                             </p>
 
                                         </div>
-
 
                                         {/* الرقم الإضافي */}
                                         {selectedOrder.additional_phone && (
@@ -770,9 +957,7 @@ export default function Account() {
                                                 </p>
 
                                             </div>
-
                                         )}
-
 
                                         {/* ملاحظات الطلب */}
                                         {selectedOrder.order_note && (
@@ -788,11 +973,9 @@ export default function Account() {
                                                 </p>
 
                                             </div>
-
                                         )}
 
                                     </div>
-
 
                                     {/* المراسلات */}
                                     <div className="border-t border-[#D8C9BC] pt-4">
@@ -800,7 +983,6 @@ export default function Account() {
                                         <p className="text-sm text-gray-500 mb-3">
                                             المراسلات
                                         </p>
-
 
                                         {/* الرسائل */}
                                         {messagesLoading ? (
@@ -825,70 +1007,231 @@ export default function Account() {
 
                                         ) : (
 
-                                            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                                            <div
+                                                ref={messageListRef}
+                                                className="space-y-3 max-h-64 overflow-y-auto pr-1"
+                                            >
 
-                                                {messages.map((msg) => (
+                                                {/* شريط وضع التحديد */}
+                                                {selectionMode && (
+                                                    <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-xl border border-[#D8C9BC] bg-white px-4 py-3 shadow-sm">
 
-                                                    <div
-                                                        key={msg.id}
-                                                        className={`flex ${msg.sender_type === 'user'
-                                                            ? 'justify-start'
-                                                            : 'justify-end'
-                                                            }`}
-                                                    >
+                                                        <span className="text-sm text-[#5A3825]">
+                                                            تم تحديد {selectedMessageIds.length} رسالة
+                                                        </span>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectionMode(false)
+                                                                setSelectedMessageIds([])
+                                                            }}
+                                                            className="text-sm text-[#5A3825] hover:underline"
+                                                        >
+                                                            إلغاء
+                                                        </button>
+
+                                                    </div>
+                                                )}
+
+                                                {messages
+                                                    .map((msg) => (
 
                                                         <div
-                                                            className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.sender_type === 'user'
-                                                                ? 'bg-[#F8F3EA] text-[#5A3825]'
-                                                                : 'bg-[#5A3825] text-white'
+                                                            key={msg.id}
+                                                            className={`flex ${msg.sender_type === 'user'
+                                                                ? 'justify-start'
+                                                                : 'justify-end'
                                                                 }`}
                                                         >
 
-                                                            <p className="text-sm leading-6 break-words">
-                                                                {msg.message}
-                                                            </p>
+                                                            <div className="flex flex-col max-w-[80%]">
 
-                                                            <div
-                                                                className={`flex items-center gap-2 text-[11px] mt-1 ${msg.sender_type === 'user'
-                                                                    ? 'text-gray-400'
-                                                                    : 'text-white/70'
-                                                                    }`}
-                                                            >
-                                                                <span>
-                                                                    {new Date(msg.sent_at).toLocaleTimeString(
-                                                                        'ar-EG',
-                                                                        {
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit',
+                                                                {/* الرسالة */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (selectionMode) {
+                                                                            toggleMessageSelection(msg.id)
+                                                                            return
                                                                         }
+
+                                                                        setActiveMessageId(
+                                                                            activeMessageId === msg.id
+                                                                                ? null
+                                                                                : msg.id
+                                                                        )
+                                                                    }}
+                                                                    className={`text-right rounded-2xl px-4 py-3 transition ${selectedMessageIds.includes(msg.id)
+                                                                        ? 'ring-2 ring-[#5A3825] ring-offset-2'
+                                                                        : ''
+                                                                        } ${msg.sender_type === 'user'
+                                                                            ? 'bg-[#F8F3EA] text-[#5A3825]'
+                                                                            : 'bg-[#5A3825] text-white'
+                                                                        }`}
+                                                                >
+
+
+                                                                    {msg.is_deleted ? (
+                                                                        <p className="text-sm leading-6 italic opacity-60">
+                                                                            تم حذف هذه الرسالة
+                                                                        </p>
+                                                                    ) : (
+                                                                        <p className="text-sm leading-6 break-words">
+                                                                            {msg.message}
+                                                                        </p>
                                                                     )}
-                                                                </span>
 
-                                                                {msg.sender_type === 'user' && (
-                                                                    <span
-                                                                        className={
-                                                                            msg.read_at || msg.delivered_at
-                                                                                ? 'text-[#5A3825]'
-                                                                                : ''
-                                                                        }
+
+                                                                    <div
+                                                                        className={`flex items-center gap-2 text-[11px] mt-1 ${msg.sender_type === 'user'
+                                                                            ? 'text-gray-400'
+                                                                            : 'text-white/70'
+                                                                            }`}
                                                                     >
-                                                                        {msg.read_at
-                                                                            ? '✓✓ مقروءة'
-                                                                            : msg.delivered_at
-                                                                                ? '✓✓ تم التسليم'
-                                                                                : '✓ تم الإرسال'}
-                                                                    </span>
-                                                                )}                                                            </div>
+
+                                                                        <span>
+                                                                            {new Date(msg.sent_at).toLocaleTimeString(
+                                                                                'ar-EG',
+                                                                                {
+                                                                                    hour: '2-digit',
+                                                                                    minute: '2-digit',
+                                                                                }
+                                                                            )}
+                                                                        </span>
+
+                                                                        {msg.sender_type === 'user' && (
+                                                                            <span
+                                                                                className={
+                                                                                    msg.read_at || msg.delivered_at
+                                                                                        ? 'text-[#5A3825]'
+                                                                                        : ''
+                                                                                }
+                                                                            >
+                                                                                {msg.read_at
+                                                                                    ? '✓✓ مقروءة'
+                                                                                    : msg.delivered_at
+                                                                                        ? '✓✓ تم التسليم'
+                                                                                        : '✓ تم الإرسال'}
+                                                                            </span>
+                                                                        )}
+
+                                                                    </div>
+
+                                                                </button>
+
+
+
+                                                                {/* خيارات الرسالة */}
+                                                                {activeMessageId === msg.id && !msg.is_deleted && (
+
+
+                                                                    <div
+                                                                        ref={messageOptionsRef}
+                                                                        className={`mt-2 relative w-fit ${msg.sender_type === 'user'
+                                                                            ? 'self-start'
+                                                                            : 'self-end'
+                                                                            }`}
+                                                                    >
+
+                                                                        {/* زر خيارات */}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                if (openMessageOptionsId === msg.id) {
+                                                                                    setOpenMessageOptionsId(null)
+                                                                                    return
+                                                                                }
+
+                                                                                calculateMessageMenuSide()
+                                                                                setOpenMessageOptionsId(msg.id)
+                                                                            }}
+                                                                            className="text-xs text-[#5A3825] hover:underline"
+                                                                        >
+                                                                            خيارات
+                                                                        </button>
+                                                                        {/* Dropdown */}
+                                                                        {openMessageOptionsId === msg.id && (
+
+                                                                            <div
+                                                                                className={`absolute z-20 mt-2 w-[150px] overflow-hidden rounded-xl border border-[#D8C9BC] bg-white shadow-lg ${messageMenuSide === 'left'
+                                                                                        ? 'left-0'
+                                                                                        : 'right-0'
+                                                                                    }`}
+                                                                            >
+                                                                                {/* حذف لدي */}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        deleteMessageForMe(msg.id)
+                                                                                        setActiveMessageId(null)
+                                                                                        setOpenMessageOptionsId(null)
+                                                                                    }}
+                                                                                    className="flex w-full items-center gap-2 px-4 py-3 text-right text-sm text-red-600 hover:bg-[#F8F3EA] transition"
+                                                                                >
+                                                                                    <FiTrash2 size={14} />
+
+                                                                                    <span>
+                                                                                        حذف لدي
+                                                                                    </span>
+                                                                                </button>
+
+                                                                                {/* حذف للجميع - رسائل العميل فقط */}
+                                                                                {msg.sender_type === 'user' &&
+                                                                                    msg.user_id === user?.id && (
+
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                deleteMessageForEveryone(msg.id)
+                                                                                                setActiveMessageId(null)
+                                                                                                setOpenMessageOptionsId(null)
+                                                                                            }}
+                                                                                            className="flex w-full items-center gap-2 px-4 py-3 text-right text-sm text-[#5A3825] hover:bg-[#F8F3EA] transition"
+                                                                                        >
+                                                                                            <FiTrash2 size={14} />
+
+                                                                                            <span>
+                                                                                                حذف للجميع
+                                                                                            </span>
+                                                                                        </button>
+
+                                                                                    )}
+
+                                                                                {/* تحديد */}
+                                                                                <button
+                                                                                    type="button"
+
+                                                                                    onClick={() => {
+                                                                                        startMessageSelection(msg.id)
+                                                                                    }}
+
+                                                                                    className="flex w-full items-center gap-2 px-4 py-3 text-right text-sm text-[#5A3825] hover:bg-[#F8F3EA] transition"
+                                                                                >
+                                                                                    <span>
+                                                                                        تحديد
+                                                                                    </span>
+                                                                                </button>
+
+                                                                            </div>
+
+                                                                        )}
+
+                                                                    </div>
+
+                                                                )}
+
+
+
+                                                            </div>
+
                                                         </div>
 
-                                                    </div>
+                                                    ))}
 
-                                                ))}
 
                                             </div>
-
                                         )}
-
 
                                         {/* كتابة رسالة */}
                                         <div className="mt-4">
@@ -923,7 +1266,6 @@ export default function Account() {
 
                                     </div>
 
-
                                 </div>
 
                             </div>
@@ -931,7 +1273,6 @@ export default function Account() {
                         </div>
 
                     </div>
-
                 )}
 
                 {/* Cancellation Confirmation Modal */}
@@ -974,6 +1315,7 @@ export default function Account() {
                                 <button
                                     type="button"
                                     onClick={async () => {
+
                                         console.log('CANCEL CONFIRM CLICKED')
                                         console.log('Cancellation order:', cancellationOrder)
                                         console.log('User:', user)
@@ -1009,13 +1351,14 @@ export default function Account() {
                                 >
                                     تأكيد
                                 </button>
+
                             </div>
 
                         </div>
 
                     </div>
-
                 )}
+
                 {/* Logout */}
                 <div className="mt-8">
 
@@ -1098,7 +1441,6 @@ export default function Account() {
                         </div>
 
                     </div>
-
                 )}
 
             </div>
@@ -1106,9 +1448,4 @@ export default function Account() {
         </main>
     )
 }
-
-
-
-
-
 

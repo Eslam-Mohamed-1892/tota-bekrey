@@ -18,7 +18,7 @@ import Cart from './pages/Cart'
 import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
-	const location = useLocation()
+		const location = useLocation()
 	const [user, setUser] = useState(null)
 	const isAdmin = location.pathname === '/admin'
 	const isAdminLogin = location.pathname === '/admin-login'
