@@ -17,6 +17,13 @@ export default function About() {
             بنحضّر مخبوزاتنا بعناية وبمكونات بسيطة، عشان كل قطعة توصلك
             بطعم طازج وإحساس المخبوزات البيتي.
           </p>
+          <p className="mt-5 text-[#6B5A50] text-lg leading-relaxed">
+            ساعات العمل الرسميه من الساعه 8 ص الي الساعه 8 م
+          </p>
+          <p className="mt-5 text-[#6B5A50] text-lg leading-relaxed">
+            يوجد تسويه في حالة ان العميل يوجد معه المكونات و يريد التسويه فقط
+          </p>
+
 
         </div>
 

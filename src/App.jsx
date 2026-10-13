@@ -8,6 +8,7 @@ import Footer from './components/Footer'
 import Contact from './components/Contact'
 import UserAccount from './components/UserAccount'
 import Account from './components/Account'
+import MainNav from './components/MainNav'
 
 import Products from './pages/Products'
 import Home from './pages/Home'
@@ -18,7 +19,7 @@ import Cart from './pages/Cart'
 import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
-		const location = useLocation()
+	const location = useLocation()
 	const [user, setUser] = useState(null)
 	const isAdmin = location.pathname === '/admin'
 	const isAdminLogin = location.pathname === '/admin-login'
@@ -243,19 +244,27 @@ export default function App() {
 
 	return (
 		<>
+
 			{!isAdmin && !isAdminLogin && !isDashboard && (
-				<Header
-					cart={cart}
-					user={user}
-					setIsUserAccountOpen={setIsUserAccountOpen}
-				/>
+				<>
+					<Header
+						cart={cart}
+						user={user}
+						setIsUserAccountOpen={setIsUserAccountOpen}
+					/>
+
+					<MainNav
+						cart={cart}
+						user={user}
+						setIsUserAccountOpen={setIsUserAccountOpen}
+					/>
+				</>
 			)}
 			<UserAccount
 				isOpen={isUserAccountOpen}
 				setIsOpen={setIsUserAccountOpen}
 			/>
-
-			<Routes>
+			<div className={!isAdmin && !isAdminLogin && !isDashboard ? 'pt-19 pb-24 md:pt-19 md:pb-0' : ''}>				<Routes>
 				<Route
 					path="/reset-password"
 					element={<ResetPassword />}
@@ -332,6 +341,7 @@ export default function App() {
 				/>
 				<Route path="/account" element={<Account />} />
 			</Routes>
+			</div>
 
 			{!isAdmin && !isAdminLogin && !isDashboard && (
 				<Footer settings={settings} />
@@ -341,3 +351,4 @@ export default function App() {
 		</>
 	)
 }
+

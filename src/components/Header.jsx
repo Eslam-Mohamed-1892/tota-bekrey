@@ -1,175 +1,96 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FiMenu, FiX, FiShoppingCart, FiUser } from 'react-icons/fi'
+
+import { Link, NavLink } from 'react-router-dom'
+import {
+  FiHome,
+  FiShoppingCart,
+  FiUser,
+  FiPackage,
+  FiMapPin,
+} from 'react-icons/fi'
+import headerLogo from '../assets/images/headerLogo5.png'
 
 export default function Header({
-  cart,
+  cart = [],
   user,
   setIsUserAccountOpen,
 }) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  const closeMenu = () => {
-    setIsOpen(false)
-  }
-
   const cartCount = cart.length
-  console.log('User:', user)
+
+  const desktopLinkClass = ({ isActive }) =>
+    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+      ? 'bg-white text-[#5A3825]'
+      : 'text-white/85 hover:bg-white/10 hover:text-white'
+    }`
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-[#5A3825] text-white">
-
-      <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
-
+    <header className="fixed top-0 left-0 w-full z-40 bg-[#5A3825] shadow-md">
+      <div
+        dir="rtl"
+        className="max-w-6xl mx-auto px-5 min-h-[76px] flex flex-col items-center justify-center gap-2 py-2 md:flex-row md:justify-between md:gap-4 md:py-0"
+      >
         {/* Logo */}
         <Link
           to="/"
-          onClick={closeMenu}
-          className="text-xl font-semibold"
+          aria-label="مخبوزات توتا - الرئيسية"
+          className="shrink-0"
         >
-          مخبوزات توتا
+          <img
+            src={headerLogo}
+            alt="مخبوزات توتا"
+            className="w-50 sm:w-56 md:w-40 h-auto object-contain"
+          />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
+        {/* Desktop Navigation Only */}
+        <nav
+          aria-label="التنقل الرئيسي"
+          className="hidden md:flex items-center gap-1"
+        >
+          <NavLink to="/" end className={desktopLinkClass}>
+            <FiHome size={18} />
+            <span>الرئيسية</span>
+          </NavLink>
 
-          <Link to="/" onClick={closeMenu}>
-            الرئيسية
-          </Link>
+          <NavLink to="/products" className={desktopLinkClass}>
+            <FiPackage size={18} />
+            <span>المخبوزات</span>
+          </NavLink>
 
-          <Link to="/products" onClick={closeMenu}>
-            المخبوزات
-          </Link>
+          <NavLink to="/contact" className={desktopLinkClass}>
+            <FiMapPin size={18} />
+            <span>العنوان والتواصل</span>
+          </NavLink>
+          <NavLink to="/cart" className={desktopLinkClass}>
+            <span className="relative">
+              <FiShoppingCart size={19} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-white text-[#5A3825] text-[10px] font-bold flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </span>
+            <span>السلة</span>
+          </NavLink>
 
-          <Link to="/contact" onClick={closeMenu}>
-            العنوان و التواصل
-          </Link>
-
-          {/* Cart */}
-          <Link
-            to="/cart"
-            onClick={closeMenu}
-            className="relative text-xl"
-            aria-label="السلة"
-          >
-            <FiShoppingCart />
-
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-white text-[#5A3825] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Login */}
           {user ? (
             <Link
               to="/account"
-              onClick={closeMenu}
-              className="flex items-center gap-2 bg-white rounded-xl p-3 text-[#5A3825]"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-[#5A3825] hover:bg-[#F8F3EA] transition"
             >
-              <FiUser />
-              <span>{user.username}</span>
+              <FiUser size={18} />
+              <span>{user.username || 'حسابي'}</span>
             </Link>
-          ) : (<button
-            onClick={() => {
-              closeMenu()
-              setIsUserAccountOpen(true)
-            }}
-            className="flex items-center gap-2 bg-white rounded-xl p-3 text-[#5A3825]"
-          >
-            <FiUser />
-            <span>تسجيل الدخول</span>
-          </button>
-          )}
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsUserAccountOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-[#5A3825] hover:bg-[#F8F3EA] transition"
+            >
+              <FiUser size={18} />
+              <span>تسجيل الدخول</span>
+            </button>)}
         </nav>
-
-        {/* Mobile Actions */}
-        <div className="flex items-center gap-4 md:hidden">
-
-          {/* Cart */}
-          <Link
-            to="/cart"
-            onClick={closeMenu}
-            className="relative text-xl"
-            aria-label="السلة"
-          >
-            <FiShoppingCart />
-
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-white text-[#5A3825] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-2xl"
-            aria-label="فتح القائمة"
-          >
-            {isOpen ? <FiX /> : <FiMenu />}
-          </button>
-
-        </div>
-
       </div>
-
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <nav className="md:hidden border-t border-white/20">
-
-          <div className="max-w-6xl mx-auto px-5 py-4 flex flex-col gap-4 text-center">
-
-            <Link
-              to="/"
-              onClick={closeMenu}
-            >
-              الرئيسية
-            </Link>
-
-            <Link
-              to="/products"
-              onClick={closeMenu}
-            >
-              المخبوزات
-            </Link>
-
-            <Link
-              to="/contact"
-              onClick={closeMenu}
-            >
-              العنوان و التواصل
-            </Link>
-            {user ? (
-              <Link
-                to="/account"
-                onClick={closeMenu}
-                className="flex items-center justify-center gap-2"
-              >
-                <span>حسابي</span>
-                <FiUser />
-              </Link>
-            ) : (
-              <button
-                onClick={() => {
-                  closeMenu()
-                  setIsUserAccountOpen(true)
-                }}
-                className="flex items-center justify-center gap-2"
-              >
-                <FiUser />
-                <span>تسجيل الدخول</span>
-              </button>
-            )}
-
-          </div>
-
-        </nav>
-      )}
-
     </header>
   )
 }
-

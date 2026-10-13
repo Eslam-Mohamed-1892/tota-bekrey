@@ -20,11 +20,11 @@ export default function DashboardMobileHeader({
       >
         <span className="text-2xl">☰</span>
 
-        {unreadMessagesCount > 0 && !isMenuOpen && (
+        {/* {unreadMessagesCount > 0 && !isMenuOpen && (
           <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#5A3825] text-white text-[10px] font-bold flex items-center justify-center">
             {unreadMessagesCount}
           </span>
-        )}
+        )} */}
       </button>
       <div className="text-right">
 

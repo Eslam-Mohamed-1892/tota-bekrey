@@ -82,11 +82,11 @@ export default function Dashboard({ products, setProducts }) {
             label: "المبيعات",
             icon: "📊",
         },
-        {
-            id: "messages",
-            label: "الرسائل",
-            icon: "💬",
-        },
+        // {
+        //     id: "messages",
+        //     label: "الرسائل",
+        //     icon: "💬",
+        // },
         {
             id: "settings",
             label: "الإعدادات",

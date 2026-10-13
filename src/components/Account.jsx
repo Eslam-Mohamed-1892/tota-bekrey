@@ -498,7 +498,7 @@ export default function Account() {
         )
     }
     return (
-        <main className="min-h-screen bg-[#F8F3EA] pt-28 pb-12">
+        <main className="min-h-screen bg-[#F8F3EA] pt-37 pb-12">
 
             <div className="max-w-4xl mx-auto px-5">
 
@@ -726,7 +726,7 @@ export default function Account() {
                                         </div>
 
                                         {/* Cancellation */}
-                                        {canCancel && (
+                                        {/*{canCancel && (
 
                                             <div className="border-t border-[#D8C9BC] mt-4 pt-4">
 
@@ -765,7 +765,7 @@ export default function Account() {
                                                 </div>
 
                                             </div>
-                                        )}
+                                        )}*/}
 
                                     </div>
                                 )
@@ -978,13 +978,13 @@ export default function Account() {
                                     </div>
 
                                     {/* المراسلات */}
-                                    <div className="border-t border-[#D8C9BC] pt-4">
+                                    {/*<div className="border-t border-[#D8C9BC] pt-4">
 
                                         <p className="text-sm text-gray-500 mb-3">
                                             المراسلات
                                         </p>
 
-                                        {/* الرسائل */}
+                                        {/* الرسائل /}
                                         {messagesLoading ? (
 
                                             <div className="py-4 text-center">
@@ -1012,7 +1012,7 @@ export default function Account() {
                                                 className="space-y-3 max-h-64 overflow-y-auto pr-1"
                                             >
 
-                                                {/* شريط وضع التحديد */}
+                                                {/* شريط وضع التحديد /}
                                                 {selectionMode && (
                                                     <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-xl border border-[#D8C9BC] bg-white px-4 py-3 shadow-sm">
 
@@ -1047,7 +1047,7 @@ export default function Account() {
 
                                                             <div className="flex flex-col max-w-[80%]">
 
-                                                                {/* الرسالة */}
+                                                                {/* الرسالة /}
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -1121,8 +1121,7 @@ export default function Account() {
                                                                 </button>
 
 
-
-                                                                {/* خيارات الرسالة */}
+                                                                {/* خيارات الرسالة /}
                                                                 {activeMessageId === msg.id && !msg.is_deleted && (
 
 
@@ -1134,7 +1133,7 @@ export default function Account() {
                                                                             }`}
                                                                     >
 
-                                                                        {/* زر خيارات */}
+                                                                        {/* زر خيارات /}
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => {
@@ -1150,7 +1149,7 @@ export default function Account() {
                                                                         >
                                                                             خيارات
                                                                         </button>
-                                                                        {/* Dropdown */}
+                                                                        {/* Dropdown /}
                                                                         {openMessageOptionsId === msg.id && (
 
                                                                             <div
@@ -1159,7 +1158,7 @@ export default function Account() {
                                                                                         : 'right-0'
                                                                                     }`}
                                                                             >
-                                                                                {/* حذف لدي */}
+                                                                                {/* حذف لدي /}
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => {
@@ -1176,7 +1175,7 @@ export default function Account() {
                                                                                     </span>
                                                                                 </button>
 
-                                                                                {/* حذف للجميع - رسائل العميل فقط */}
+                                                                                {/* حذف للجميع - رسائل العميل فقط /}
                                                                                 {msg.sender_type === 'user' &&
                                                                                     msg.user_id === user?.id && (
 
@@ -1198,7 +1197,7 @@ export default function Account() {
 
                                                                                     )}
 
-                                                                                {/* تحديد */}
+                                                                                {/* تحديد /}
                                                                                 <button
                                                                                     type="button"
 
@@ -1233,7 +1232,7 @@ export default function Account() {
                                             </div>
                                         )}
 
-                                        {/* كتابة رسالة */}
+                                        {/* كتابة رسالة /}
                                         <div className="mt-4">
 
                                             <textarea
@@ -1264,7 +1263,7 @@ export default function Account() {
 
                                         </div>
 
-                                    </div>
+                                    </div>*/}
 
                                 </div>
 
@@ -1276,7 +1275,7 @@ export default function Account() {
                 )}
 
                 {/* Cancellation Confirmation Modal */}
-                {showCancellationModal && (
+                {/*{showCancellationModal && (
 
                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
 
@@ -1357,7 +1356,7 @@ export default function Account() {
                         </div>
 
                     </div>
-                )}
+                )}*/}
 
                 {/* Logout */}
                 <div className="mt-8">

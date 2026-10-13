@@ -1,6 +1,5 @@
 import heroImage from '../assets/images/hero/hero1.jpg'
 import { Link } from 'react-router-dom'
-import Products from '../pages/Products'
 
 
 export default function Hero() {
