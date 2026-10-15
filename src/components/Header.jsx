@@ -26,7 +26,7 @@ export default function Header({
     <header className="fixed top-0 left-0 w-full z-40 bg-[#5A3825] shadow-md">
       <div
         dir="rtl"
-        className="max-w-6xl mx-auto px-5 min-h-[76px] flex flex-col items-center justify-center gap-2 py-2 md:flex-row md:justify-between md:gap-4 md:py-0"
+        className="max-w-6xl mx-auto px-5 min-h-19 flex flex-col items-center justify-center gap-2 py-2 md:flex-row md:justify-between md:gap-4 md:py-0"
       >
         {/* Logo */}
         <Link

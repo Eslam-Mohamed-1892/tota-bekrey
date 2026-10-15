@@ -120,7 +120,7 @@ export default function MainNav({
                         type="button"
                         aria-label="إغلاق القائمة"
                         onClick={closeMenu}
-                        className="md:hidden fixed inset-0 z-[60] bg-black/40"
+                        className="md:hidden fixed inset-0 z-60 bg-black/40"
                     />
                 )}
 
@@ -129,7 +129,7 @@ export default function MainNav({
                     dir="rtl"
                     aria-label="قائمة الموقع"
                     aria-hidden={!isMenuOpen}
-                    className={`md:hidden fixed top-0 right-0 bottom-0 z-[70] w-[min(82vw,320px)] bg-[#F8F3EA] text-[#2E1B12] shadow-2xl transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+                    className={`md:hidden fixed top-0 right-0 bottom-0 z-70 w-[min(82vw,320px)] bg-[#F8F3EA] text-[#2E1B12] shadow-2xl transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
                         }`}
                 >
                     <div className="flex items-center justify-between p-5 border-b border-[#D8C9BC]">

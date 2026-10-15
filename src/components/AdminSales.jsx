@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { supabase } from '../supabase'
+
+import { adminSupabase } from '../supabase'
 import {
     LineChart,
     Line,
@@ -21,6 +22,7 @@ export default function AdminSales() {
     })()
 
     const [orderToDelete, setOrderToDelete] = useState(null)
+    const [entryToDelete, setEntryToDelete] = useState(null)
 
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(true)
@@ -38,13 +40,22 @@ export default function AdminSales() {
     )
     const [selectedStatus, setSelectedStatus] = useState("all")
 
+    const [settlements, setSettlements] = useState([])
+    const [settlementsLoading, setSettlementsLoading] = useState(true)
+
+    const [entryType, setEntryType] = useState('expense')
+
+
+
+
     useEffect(() => {
         getOrders()
         getExpenses()
+        getSettlements()
     }, [])
 
     const getOrders = async () => {
-        const { data, error } = await supabase
+        const { data, error } = await adminSupabase
             .from('orders')
             .select('*')
             .order('created_at', { ascending: false })
@@ -60,7 +71,7 @@ export default function AdminSales() {
     }
 
     const getExpenses = async () => {
-        const { data, error } = await supabase
+        const { data, error } = await adminSupabase
             .from('expenses')
             .select('*')
             .order('expense_date', { ascending: false })
@@ -75,8 +86,27 @@ export default function AdminSales() {
         setExpensesLoading(false)
     }
 
+
+    const getSettlements = async () => {
+        const { data, error } = await adminSupabase
+            .from('settlements')
+            .select('*')
+            .order('settlement_date', { ascending: false })
+
+        if (error) {
+            console.log('Error loading settlements:', error)
+            toast.error('حدث خطأ أثناء تحميل إيرادات التسوية')
+            setSettlementsLoading(false)
+            return
+        }
+
+        setSettlements(data || [])
+        setSettlementsLoading(false)
+    }
+
+
     const updateStatus = async (id, status) => {
-        const { error } = await supabase
+        const { error } = await adminSupabase
             .from('orders')
             .update({ status })
             .eq('id', id)
@@ -101,7 +131,7 @@ export default function AdminSales() {
     }
 
     const deleteOrder = async (id) => {
-        const { error } = await supabase
+        const { error } = await adminSupabase
             .from('orders')
             .delete()
             .eq('id', id)
@@ -119,58 +149,80 @@ export default function AdminSales() {
         toast.success('تم حذف الطلب بنجاح')
     }
 
+
     const addExpense = async () => {
+        const isSettlement = entryType === 'settlement'
+        const entryLabel = isSettlement ? 'التسوية' : 'المصروف'
+
         if (!expenseAmount || Number(expenseAmount) <= 0) {
-            toast.error('اكتب قيمة المصروف')
+            toast.error(`اكتب قيمة ${entryLabel}`)
             return
         }
 
         if (!expenseDate) {
-            toast.error('اختر تاريخ المصروف')
+            toast.error(`اختر تاريخ ${entryLabel}`)
             return
         }
 
-        const { data, error } = await supabase
-            .from('expenses')
-            .insert([
-                {
-                    category: expenseCategory,
-                    description: expenseDescription,
-                    amount: Number(expenseAmount),
-                    expense_date: expenseDate,
-                },
+        if (isSettlement) {
+            const { data, error } = await adminSupabase
+                .from('settlements')
+                .insert([
+                    {
+                        description: expenseDescription.trim() || null,
+                        amount: Number(expenseAmount),
+                        settlement_date: expenseDate,
+                    },
+                ])
+                .select()
+
+            if (error) {
+                console.log('Error adding settlement:', error)
+                toast.error('حدث خطأ أثناء إضافة إيراد التسوية')
+                return
+            }
+
+            setSettlements((prev) => [
+                ...data,
+                ...prev,
             ])
-            .select()
 
-        if (error) {
-            console.log('Error adding expense:', error)
-            toast.error('حدث خطأ أثناء إضافة المصروف')
-            return
+            toast.success('تم إضافة إيراد التسوية بنجاح')
+        } else {
+            const { data, error } = await adminSupabase
+                .from('expenses')
+                .insert([
+                    {
+                        category: expenseCategory,
+                        description: expenseDescription.trim(),
+                        amount: Number(expenseAmount),
+                        expense_date: expenseDate,
+                    },
+                ])
+                .select()
+
+            if (error) {
+                console.log('Error adding expense:', error)
+                toast.error('حدث خطأ أثناء إضافة المصروف')
+                return
+            }
+
+            setExpenses((prev) => [
+                ...data,
+                ...prev,
+            ])
+
+            toast.success('تم إضافة المصروف بنجاح')
         }
 
-        setExpenses((prev) => [
-            data[0],
-            ...prev,
-        ])
-
-        setExpenseCategory('gas')
         setExpenseDescription('')
         setExpenseAmount('')
-        setExpenseDate(
-            new Date().toISOString().split('T')[0]
-        )
-
-        toast.success('تم إضافة المصروف بنجاح')
+        setExpenseDate(new Date().toISOString().split('T')[0])
     }
 
+
     const deleteExpense = async (id) => {
-        const confirmed = window.confirm(
-            'هل أنت متأكد من حذف هذا المصروف؟'
-        )
-
-        if (!confirmed) return
-
-        const { error } = await supabase
+        const { error } = await adminSupabase
             .from('expenses')
             .delete()
             .eq('id', id)
@@ -178,7 +230,7 @@ export default function AdminSales() {
         if (error) {
             console.log('Error deleting expense:', error)
             toast.error('حدث خطأ أثناء حذف المصروف')
-            return
+            return false
         }
 
         setExpenses((prev) =>
@@ -186,7 +238,28 @@ export default function AdminSales() {
         )
 
         toast.success('تم حذف المصروف بنجاح')
+        return true
     }
+
+    const deleteSettlement = async (id) => {
+        const { error } = await adminSupabase
+            .from('settlements')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            console.log('Error deleting settlement:', error)
+            toast.error('حدث خطأ أثناء حذف التسوية')
+            return
+        }
+
+        setSettlements((prev) =>
+            prev.filter((settlement) => settlement.id !== id)
+        )
+
+        toast.success('تم حذف التسوية بنجاح')
+    }
+
 
     const getStatusText = (status) => {
         switch (status) {
@@ -267,6 +340,34 @@ export default function AdminSales() {
         return expense.expense_date.startsWith(selectedMonth)
     })
 
+
+    const filteredSettlements = settlements.filter((settlement) => {
+        return settlement.settlement_date?.startsWith(selectedMonth)
+    })
+
+    const totalSettlementRevenue = filteredSettlements.reduce(
+        (total, settlement) => total + Number(settlement.amount),
+        0
+    )
+
+    const financialEntries = [
+        ...filteredExpenses.map((expense) => ({
+            ...expense,
+            entryType: 'expense',
+            entryDate: expense.expense_date,
+        })),
+
+        ...filteredSettlements.map((settlement) => ({
+            ...settlement,
+            entryType: 'settlement',
+            entryDate: settlement.settlement_date,
+        })),
+    ].sort((a, b) => {
+        return new Date(b.entryDate) - new Date(a.entryDate)
+    })
+
+
+
     const gasExpenses = filteredExpenses
         .filter((expense) => expense.category === 'gas')
         .reduce(
@@ -305,7 +406,8 @@ export default function AdminSales() {
         laborExpenses +
         otherExpenses
 
-    const netProfit = totalSales - totalExpenses
+    const netProfit =
+        totalSales + totalSettlementRevenue - totalExpenses
 
     const months = Array.from(
         { length: 12 },
@@ -451,8 +553,7 @@ export default function AdminSales() {
             </div>
 
             {/* Main Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div className="bg-white border border-[#E8DED2] rounded-2xl p-5 overflow-hidden">
 
                     <p className="text-sm text-[#6B5A50]">
@@ -477,6 +578,17 @@ export default function AdminSales() {
                     </p>
 
                 </div>
+
+                <div className="bg-white border border-[#E8DED2] rounded-2xl p-5 overflow-hidden">
+                    <p className="text-sm text-[#6B5A50]">
+                        إيرادات التسوية
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold text-[#2E1B12]">
+                        {totalSettlementRevenue} جنيه
+                    </p>
+                </div>
+
 
 
                 <div className="bg-white border border-[#E8DED2] rounded-2xl p-5 overflow-hidden">
@@ -836,13 +948,12 @@ export default function AdminSales() {
                 <div className="mb-6">
 
                     <h3 className="text-xl font-bold">
-                        المصروفات
+                        المصروفات والتسويات
                     </h3>
 
                     <p className="text-sm text-[#6B5A50] mt-1">
-                        تسجيل ومتابعة مصروفات الشهر المختار.
+                        تسجيل ومتابعة المصروفات وإيرادات خدمة التسوية للشهر المختار.
                     </p>
-
                 </div>
 
 
@@ -851,32 +962,52 @@ export default function AdminSales() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-semibold mb-2">
+                                نوع السجل
+                            </label>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEntryType('expense')}
+                                    className={`rounded-xl border px-4 py-3 transition ${entryType === 'expense'
+                                        ? 'bg-[#5A3825] text-white border-[#5A3825]'
+                                        : 'bg-white text-[#5A3825] border-[#D8C9BC]'
+                                        }`}
+                                >
+                                    مصروف
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setEntryType('settlement')}
+                                    className={`rounded-xl border px-4 py-3 transition ${entryType === 'settlement'
+                                        ? 'bg-[#5A3825] text-white border-[#5A3825]'
+                                        : 'bg-white text-[#5A3825] border-[#D8C9BC]'
+                                        }`}
+                                >
+                                    إيراد تسوية
+                                </button>
+                            </div>
+                        </div>
+
+
                         {/* Category */}
-                        <select
-                            value={expenseCategory}
-                            onChange={(e) =>
-                                setExpenseCategory(e.target.value)
-                            }
-                            className="w-full border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
-                        >
 
-                            <option value="gas">
-                                غاز
-                            </option>
-
-                            <option value="supplies">
-                                مستلزمات
-                            </option>
-
-                            <option value="labor">
-                                أيدي عاملة
-                            </option>
-
-                            <option value="other">
-                                مصروفات إضافية
-                            </option>
-
-                        </select>
+                        {entryType === 'expense' && (
+                            <select
+                                value={expenseCategory}
+                                onChange={(e) => setExpenseCategory(e.target.value)}
+                                className="w-full border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
+                            >
+                                <option value="gas">غاز</option>
+                                <option value="supplies">مستلزمات</option>
+                                <option value="labor">أيدي عاملة</option>
+                                <option value="other">مصروفات إضافية</option>
+                            </select>
+                        )}
 
 
                         {/* Description */}
@@ -886,10 +1017,13 @@ export default function AdminSales() {
                             onChange={(e) =>
                                 setExpenseDescription(e.target.value)
                             }
+
                             placeholder={
-                                expenseCategory === 'supplies'
-                                    ? 'مثال: دقيق - سمنة - زيت - أكياس'
-                                    : 'تفاصيل المصروف'
+                                entryType === 'settlement'
+                                    ? 'تفاصيل خدمة التسوية'
+                                    : expenseCategory === 'supplies'
+                                        ? 'مثال: دقيق - سمنة - زيت - أكياس'
+                                        : 'تفاصيل المصروف'
                             }
                             className="w-full border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
                         />
@@ -903,8 +1037,11 @@ export default function AdminSales() {
                             onChange={(e) =>
                                 setExpenseAmount(e.target.value)
                             }
-                            placeholder="قيمة المصروف"
-                            className="w-full border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
+                            placeholder={
+                                entryType === 'settlement'
+                                    ? 'قيمة التسوية بالجنيه'
+                                    : 'قيمة المصروف'
+                            } className="w-full border border-[#D8C9BC] rounded-xl px-4 py-3 outline-none bg-white"
                         />
 
                     </div>
@@ -926,7 +1063,7 @@ export default function AdminSales() {
                             onClick={addExpense}
                             className="bg-[#5A3825] text-white px-5 py-3 rounded-xl"
                         >
-                            إضافة مصروف
+                            {entryType === 'settlement' ? 'إضافة إيراد التسوية' : 'إضافة مصروف'}
                         </button>
 
                     </div>
@@ -934,78 +1071,89 @@ export default function AdminSales() {
                 </div>
 
 
-                {/* Expenses List */}
+
+                {/* Financial Entries List */}
                 <div className="mt-6">
 
-                    {expensesLoading ? (
+                    {expensesLoading || settlementsLoading ? (
 
                         <p className="text-[#6B5A50]">
-                            جاري تحميل المصروفات...
+                            جاري تحميل السجلات...
                         </p>
 
-                    ) : filteredExpenses.length === 0 ? (
+                    ) : financialEntries.length === 0 ? (
 
-                        <div className="border border-[#E8DDD2] rounded-xl p-5 overflow-hidden">
-
+                        <div className="border border-[#E8DDD2] rounded-xl p-5">
                             <p className="text-[#6B5A50]">
-                                لا توجد مصروفات في هذا الشهر.
+                                لا توجد مصروفات أو تسويات في هذا الشهر.
                             </p>
-
                         </div>
 
                     ) : (
 
                         <div className="max-h-[450px] overflow-y-auto overflow-x-hidden space-y-3 pr-1">
 
-                            {filteredExpenses.map((expense) => (
-                                <div
-                                    key={expense.id}
-                                    className="border border-[#E8DDD2] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden"
-                                >
+                            {financialEntries.map((entry) => {
+                                const isSettlement = entry.entryType === 'settlement'
 
-                                    <div>
+                                return (
+                                    <div
+                                        key={`${entry.entryType}-${entry.id}`}
+                                        className="border border-[#E8DDD2] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden"
+                                    >
 
-                                        <p className="font-semibold text-[#2E1B12]">
-                                            {getCategoryText(
-                                                expense.category
+                                        <div className="min-w-0">
+
+                                            <div className="flex flex-wrap items-center gap-2">
+
+                                                <p className="font-semibold text-[#2E1B12]">
+                                                    {isSettlement
+                                                        ? 'إيراد خدمة التسوية'
+                                                        : getCategoryText(entry.category)}
+                                                </p>
+
+                                                <span
+                                                    className={`text-xs px-2 py-1 rounded-full ${isSettlement
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-[#F8F3EA] text-[#6B5A50]'
+                                                        }`}
+                                                >
+                                                    {isSettlement ? 'إيراد' : 'مصروف'}
+                                                </span>
+
+                                            </div>
+
+                                            {entry.description && (
+                                                <p className="text-sm text-[#6B5A50] mt-1 break-words">
+                                                    {entry.description}
+                                                </p>
                                             )}
-                                        </p>
 
-                                        {expense.description && (
-                                            <p className="text-sm text-[#6B5A50] mt-1 break-words">
-                                                {expense.description}
+                                            <p className="text-sm text-[#6B5A50] mt-1">
+                                                {entry.entryDate}
                                             </p>
-                                        )}
 
-                                        <p className="text-sm text-[#6B5A50] mt-1">
-                                            {expense.expense_date}
-                                        </p>
+                                        </div>
 
-                                    </div>
+                                        <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
 
+                                            <p className="font-bold text-[#5A3825]">
+                                                {Number(entry.amount).toLocaleString('ar-EG')} جنيه
+                                            </p>
 
-                                    <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEntryToDelete(entry)}
+                                                className="text-red-600 hover:text-red-800"
+                                            >
+                                                حذف
+                                            </button>
 
-                                        <p className="font-bold text-[#5A3825]">
-                                            {expense.amount} جنيه
-                                        </p>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                deleteExpense(
-                                                    expense.id
-                                                )
-                                            }
-                                            className="text-red-600"
-                                        >
-                                            حذف
-                                        </button>
+                                        </div>
 
                                     </div>
-
-                                </div>
-                            ))}
+                                )
+                            })}
 
                         </div>
 
@@ -1101,6 +1249,71 @@ export default function AdminSales() {
 
                 </div>
             )}
+
+
+            {/* Delete Financial Entry Modal */}
+            {entryToDelete && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6">
+
+                        <h3 className="text-xl font-bold text-[#2E1B12]">
+                            تأكيد الحذف
+                        </h3>
+
+                        <p className="text-[#6B5A50] mt-3">
+                            هل أنت متأكد من حذف{' '}
+                            {entryToDelete.entryType === 'settlement'
+                                ? 'إيراد التسوية'
+                                : 'هذا المصروف'}
+                            ؟
+                        </p>
+
+                        {entryToDelete.description && (
+                            <p className="text-sm text-[#6B5A50] mt-2 break-words">
+                                {entryToDelete.description}
+                            </p>
+                        )}
+
+                        <p className="font-bold text-[#5A3825] mt-2">
+                            {Number(entryToDelete.amount).toLocaleString('ar-EG')} جنيه
+                        </p>
+
+                        <div className="flex gap-3 mt-6">
+
+                            <button
+                                type="button"
+                                onClick={() => setEntryToDelete(null)}
+                                className="flex-1 border border-[#E8DDD2] py-3 rounded-xl"
+                            >
+                                تراجع
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const entry = entryToDelete
+
+                                    if (entry.entryType === 'settlement') {
+                                        await deleteSettlement(entry.id)
+                                    } else {
+                                        await deleteExpense(entry.id)
+                                    }
+
+                                    setEntryToDelete(null)
+                                }}
+                                className="flex-1 bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition"
+                            >
+                                تأكيد الحذف
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            )}
+
 
         </section>
     )
